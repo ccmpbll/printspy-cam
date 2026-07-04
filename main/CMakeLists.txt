@@ -5,12 +5,11 @@ idf_component_register(
     "http_server.c"
     "wifi.c"
     "wifi_ap.c"
-    "nvs.c"
+    "settings.c"
     "ota.c"
     "led.c"
   INCLUDE_DIRS
     "."
-    "boards"
   EMBED_FILES
     "../web/admin.html"
   REQUIRES

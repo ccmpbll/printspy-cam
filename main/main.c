@@ -2,8 +2,8 @@
 #include "esp_log.h"
 #include "http_server.h"
 #include "led.h"
-#include "nvs.h"
 #include "nvs_flash.h"
+#include "settings.h"
 #include "version.h"
 #include "wifi.h"
 
