@@ -14,12 +14,14 @@ CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 
-# esp32-camera defaults this to OFF even on boards with PSRAM (Kconfig
-# option CAMERA_PSRAM_DMA in the esp32-camera component). Without it,
-# frame capture goes through a small intermediate SRAM buffer instead of
-# DMA'ing straight from PSRAM - on real hardware this showed up as
-# constant "cam_hal: NO-SOI - JPEG start marker missing" / "EV-EOF-OVF"
-# warnings and eventually a hard capture timeout (0 frames ever
-# delivered). Enabling it lets DMA write directly into the PSRAM frame
-# buffers cam_hal already allocates there.
-CONFIG_CAMERA_PSRAM_DMA=y
+# CONFIG_CAMERA_PSRAM_DMA intentionally left at its default (off). It was
+# tried here to chase "NO-SOI"/"EV-EOF-OVF" errors, but that turned out to
+# be a transposed D5/D7 pin (fixed in boards/freenove_s3.h) - the real
+# bug. Once pins were correct, PSRAM DMA mode caused a *different*
+# failure ("NO-EOI" + capture timeout, at both HD and VGA - not a
+# resolution/bandwidth issue). Turns out this is a known, acknowledged
+# limitation, not something to debug further here: per esp32-camera
+# maintainers (github.com/espressif/esp32-camera/issues/775), "It does
+# not work well for JPEG... Overall experimental feature" - multiple
+# unresolved upstream bugs (#783, #785, #776) chase EOI-detection
+# failures specifically in this mode. Leave off; it was never the fix.

@@ -12,14 +12,10 @@ static const char *TAG = "printspy_camera";
 // Treat 0 as unset and fall back to the plan's stated defaults; revisit
 // once the settings UI can actually persist a real first value.
 //
-// FRAMESIZE_VGA (not the plan's originally stated HD) as a diagnostic
-// step: real hardware captured a valid JPEG start marker at HD but then
-// hit "NO-EOI - JPEG end marker missing" + a capture timeout - looked
-// like a signal-integrity/timing ceiling at that resolution's higher
-// PCLK data rate over this board's trace lengths, not a wiring bug (the
-// D5/D7 fix already addressed the actual wiring bug). Smaller frame
-// tests whether that theory holds; raise back once confirmed stable.
-#define DEFAULT_FRAMESIZE FRAMESIZE_VGA
+// Back to HD - dropping to VGA was a red herring while chasing "NO-EOI"
+// (same failure at VGA too, so it was never about resolution/bandwidth -
+// see sdkconfig.defaults.esp32s3 for the real cause, PSRAM DMA mode).
+#define DEFAULT_FRAMESIZE FRAMESIZE_HD
 #define DEFAULT_JPEG_QUALITY 12
 
 esp_err_t printspy_camera_init(void) {
