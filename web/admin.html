@@ -1,16 +1,163 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>PrintSpy Cam</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PrintSpy Cam</title>
+<style>
+body{margin:0;padding:24px 16px;background:rgb(245,242,240);
+color:rgb(41,41,41);font-family:-apple-system,BlinkMacSystemFont,
+'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;}
+h1{font-size:1.4rem;font-weight:700;margin:0 0 4px;}
+p.sub{margin:0 0 20px;color:rgb(130,120,110);font-size:.85rem;}
+.card{background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;
+box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.card h2{font-size:1rem;font-weight:600;margin:0 0 12px;}
+img#preview{width:100%;border-radius:6px;display:block;background:#000;}
+label{display:block;font-size:.85rem;font-weight:600;margin-bottom:4px;}
+select,input[type=text],input[type=password]{width:100%;box-sizing:border-box;
+padding:8px 10px;border:1px solid rgb(200,195,190);border-radius:6px;
+font-size:.95rem;background:#fff;color:rgb(41,41,41);margin-bottom:12px;}
+input[type=range]{width:100%;margin-bottom:12px;}
+.row{display:flex;align-items:center;justify-content:space-between;
+margin-bottom:12px;font-size:.9rem;}
+button{padding:8px 14px;border:none;border-radius:6px;
+background:linear-gradient(217deg,#4c6ef5,#22b8cf);
+color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;}
+button:active{opacity:.85;}
+.status-line{font-size:.8rem;color:rgb(130,120,110);margin:2px 0;}
+#logs{background:#1e1e1e;color:#ddd;font-family:ui-monospace,Menlo,monospace;
+font-size:.75rem;height:200px;overflow-y:auto;padding:8px;border-radius:6px;
+white-space:pre-wrap;word-break:break-all;}
+#msg{font-size:.85rem;margin-top:8px;display:none;}
+</style>
 </head>
 <body>
-  <h1>PrintSpy Cam</h1>
-  <!-- TODO: Camera / Network / WiFi / Firmware / Preview sections
-       per notes/printspy-cam.md "Web admin UI" -->
-  <section>
-    <h2>Preview</h2>
-    <img src="/snapshot" alt="live snapshot">
-  </section>
+<h1>PrintSpy Cam</h1>
+<p class="sub" id="status-sub">-</p>
+
+<div class="card">
+  <h2>Preview</h2>
+  <img id="preview" src="/snapshot" alt="live snapshot">
+</div>
+
+<div class="card">
+  <h2>Camera</h2>
+  <div class="row"><span>Flip horizontally</span><input type="checkbox" id="hmirror"></div>
+  <div class="row"><span>Flip vertically</span><input type="checkbox" id="vflip"></div>
+  <label for="brightness">Brightness (<span id="brightness-val">0</span>)</label>
+  <input type="range" id="brightness" min="-2" max="2" step="1">
+  <label for="contrast">Contrast (<span id="contrast-val">0</span>)</label>
+  <input type="range" id="contrast" min="-2" max="2" step="1">
+  <label for="saturation">Saturation (<span id="saturation-val">0</span>)</label>
+  <input type="range" id="saturation" min="-2" max="2" step="1">
+  <button id="save-camera">Save</button>
+</div>
+
+<div class="card">
+  <h2>WiFi</h2>
+  <label for="ssid">Network</label>
+  <input type="text" id="ssid" autocomplete="off">
+  <label for="password">Password</label>
+  <input type="password" id="password" autocomplete="new-password">
+  <button id="save-wifi">Save &amp; restart</button>
+</div>
+
+<div class="card">
+  <h2>Firmware</h2>
+  <p class="status-line" id="version-line">-</p>
+  <input type="file" id="ota-file" accept=".bin">
+  <button id="upload-ota">Upload &amp; restart</button>
+</div>
+
+<div class="card">
+  <h2>Log console</h2>
+  <div id="logs"></div>
+</div>
+
+<p id="msg"></p>
+
+<script>
+function showMsg(text) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+function refreshStatus() {
+  fetch('/api/status').then(r => r.json()).then(s => {
+    document.getElementById('status-sub').textContent =
+      `${s.ip || '?'} - ${s.wifi_ssid || '?'} - up ${Math.floor(s.uptime_seconds / 60)}m`;
+    document.getElementById('version-line').textContent = `Version ${s.version}`;
+  }).catch(() => {});
+}
+
+function refreshCameraSettings() {
+  fetch('/api/settings').then(r => r.json()).then(s => {
+    document.getElementById('hmirror').checked = s.hmirror;
+    document.getElementById('vflip').checked = s.vflip;
+    document.getElementById('brightness').value = s.brightness;
+    document.getElementById('brightness-val').textContent = s.brightness;
+    document.getElementById('contrast').value = s.contrast;
+    document.getElementById('contrast-val').textContent = s.contrast;
+    document.getElementById('saturation').value = s.saturation;
+    document.getElementById('saturation-val').textContent = s.saturation;
+  }).catch(() => {});
+}
+
+['brightness', 'contrast', 'saturation'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    document.getElementById(id + '-val').textContent = e.target.value;
+  });
+});
+
+document.getElementById('save-camera').addEventListener('click', () => {
+  const body = {
+    hmirror: document.getElementById('hmirror').checked,
+    vflip: document.getElementById('vflip').checked,
+    brightness: parseInt(document.getElementById('brightness').value, 10),
+    contrast: parseInt(document.getElementById('contrast').value, 10),
+    saturation: parseInt(document.getElementById('saturation').value, 10),
+  };
+  fetch('/api/settings', {method: 'POST', body: JSON.stringify(body)})
+    .then(() => showMsg('Camera settings saved.'))
+    .catch(() => showMsg('Failed to save camera settings.'));
+});
+
+document.getElementById('save-wifi').addEventListener('click', () => {
+  const ssid = document.getElementById('ssid').value;
+  if (!ssid) { showMsg('SSID is required.'); return; }
+  const body = {ssid, password: document.getElementById('password').value};
+  showMsg('Saving and restarting...');
+  fetch('/api/wifi', {method: 'POST', body: JSON.stringify(body)}).catch(() => {});
+});
+
+document.getElementById('upload-ota').addEventListener('click', () => {
+  const fileInput = document.getElementById('ota-file');
+  const file = fileInput.files[0];
+  if (!file) { showMsg('Choose a .bin file first.'); return; }
+  showMsg('Uploading firmware...');
+  fetch('/api/ota', {method: 'POST', body: file})
+    .then(r => {
+      if (!r.ok) throw new Error();
+      showMsg('Upload complete, restarting...');
+    })
+    .catch(() => showMsg('Firmware upload failed.'));
+});
+
+const logsEl = document.getElementById('logs');
+const logSource = new EventSource('/api/logs');
+logSource.onmessage = e => {
+  logsEl.textContent += e.data + '\n';
+  logsEl.scrollTop = logsEl.scrollHeight;
+};
+
+refreshStatus();
+refreshCameraSettings();
+setInterval(refreshStatus, 5000);
+setInterval(() => {
+  document.getElementById('preview').src = '/snapshot?t=' + Date.now();
+}, 3000);
+</script>
 </body>
 </html>

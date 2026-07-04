@@ -56,6 +56,15 @@ esp_err_t printspy_camera_init(void) {
     return err;
   }
 
+  sensor_t *sensor = esp_camera_sensor_get();
+  if (sensor) {
+    sensor->set_hmirror(sensor, printspy_nvs_get_hmirror());
+    sensor->set_vflip(sensor, printspy_nvs_get_vflip());
+    sensor->set_brightness(sensor, printspy_nvs_get_cam_brightness());
+    sensor->set_contrast(sensor, printspy_nvs_get_cam_contrast());
+    sensor->set_saturation(sensor, printspy_nvs_get_cam_saturation());
+  }
+
   ESP_LOGI(TAG, "camera initialized (frame_size=%d, quality=%d)",
            config.frame_size, config.jpeg_quality);
   return ESP_OK;

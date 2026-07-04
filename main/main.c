@@ -1,7 +1,7 @@
 #include "camera.h"
 #include "esp_log.h"
-#include "http_server.h"
 #include "led.h"
+#include "log.h"
 #include "nvs_flash.h"
 #include "settings.h"
 #include "version.h"
@@ -10,6 +10,9 @@
 static const char *TAG = "printspy_cam";
 
 void app_main(void) {
+  // First, so the live log console can show everything from boot onward.
+  printspy_log_init();
+
   ESP_LOGI(TAG, "PrintSpy Cam %s starting", PRINTSPY_CAM_VERSION);
 
   esp_err_t err = nvs_flash_init();

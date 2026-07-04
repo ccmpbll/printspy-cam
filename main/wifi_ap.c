@@ -5,13 +5,16 @@
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "settings.h"
+#include "wifi.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 static const char *TAG = "wifi_ap";
 
-#define AP_SSID "printspy-cam-setup"
 #define AP_MAX_CONNECTIONS 4
+static char ap_ssid[24]; // "printspy-cam-setup-" + 4 hex chars + null
 
 static httpd_handle_t http_server = NULL;
 
@@ -80,7 +83,13 @@ static const char *SETUP_PAGE_TEMPLATE =
     "</body>"
     "</html>";
 
-static const char *SUCCESS_PAGE =
+// %s is the mDNS hostname (e.g. "printspy-cam-a1b2") - known up front since
+// it's derived from the device's own MAC, not from DHCP, so it can be
+// shown here even though the device hasn't connected (or gotten an IP)
+// yet. Simpler and more resilient than trying to display a live IP address
+// discovered after reconnecting, which would need the AP-mode page (about
+// to go down for the reboot) to somehow learn it after the fact.
+static const char *SUCCESS_PAGE_TEMPLATE =
     "<!DOCTYPE html>"
     "<html lang='en'>"
     "<head>"
@@ -93,11 +102,13 @@ static const char *SUCCESS_PAGE =
     "'Segoe UI',Roboto,Helvetica,Arial,sans-serif;text-align:center;}"
     "h1{font-size:1.4rem;font-weight:700;margin:48px 0 8px;}"
     "p{color:rgb(130,120,110);font-size:.95rem;}"
+    "a{color:rgb(76,110,245);}"
     "</style>"
     "</head>"
     "<body>"
     "<h1>Credentials saved.</h1>"
     "<p>PrintSpy Cam is restarting and will connect to your network.</p>"
+    "<p>Once connected, find it at <a href='http://%s.local'>http://%s.local</a></p>"
     "<p>You can close this page.</p>"
     "</body>"
     "</html>";
@@ -219,8 +230,20 @@ static esp_err_t handle_connect_body(httpd_req_t *req, const char *body) {
           sizeof(wifi_cfg.sta.password));
   esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
 
+  char hostname[32];
+  const char *custom_hostname = printspy_nvs_get_hostname();
+  if (custom_hostname) {
+    snprintf(hostname, sizeof(hostname), "%s", custom_hostname);
+  } else {
+    char id_suffix[5];
+    printspy_wifi_get_id_suffix(id_suffix, sizeof(id_suffix));
+    snprintf(hostname, sizeof(hostname), "printspy-cam-%s", id_suffix);
+  }
+  char page[512];
+  snprintf(page, sizeof(page), SUCCESS_PAGE_TEMPLATE, hostname, hostname);
+
   httpd_resp_set_type(req, "text/html");
-  httpd_resp_send(req, SUCCESS_PAGE, HTTPD_RESP_USE_STRLEN);
+  httpd_resp_send(req, page, HTTPD_RESP_USE_STRLEN);
 
   vTaskDelay(pdMS_TO_TICKS(500)); // Let the response flush
   esp_restart();
@@ -265,23 +288,27 @@ static esp_err_t connect_get_handler(httpd_req_t *req) {
 void printspy_wifi_ap_start(bool is_fallback) {
   ESP_LOGI(TAG, "Starting AP mode (fallback=%d)", is_fallback);
 
+  char id_suffix[5];
+  printspy_wifi_get_id_suffix(id_suffix, sizeof(id_suffix));
+  snprintf(ap_ssid, sizeof(ap_ssid), "printspy-cam-setup-%s", id_suffix);
+
   // Switch to APSTA so we can still run a WiFi scan
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 
   wifi_config_t ap_cfg = {
       .ap = {
-          .ssid = AP_SSID,
-          .ssid_len = strlen(AP_SSID),
           .channel = 1,
           .password = "",
           .max_connection = AP_MAX_CONNECTIONS,
           .authmode = WIFI_AUTH_OPEN,
       },
   };
+  strncpy((char *)ap_cfg.ap.ssid, ap_ssid, sizeof(ap_cfg.ap.ssid));
+  ap_cfg.ap.ssid_len = strlen(ap_ssid);
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_cfg));
   ESP_ERROR_CHECK(esp_wifi_start());
 
-  ESP_LOGI(TAG, "AP started: SSID=%s IP=192.168.4.1", AP_SSID);
+  ESP_LOGI(TAG, "AP started: SSID=%s IP=192.168.4.1", ap_ssid);
 
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.lru_purge_enable = true;

@@ -4,7 +4,11 @@
 #include "esp_netif.h"
 #include "esp_wifi.h"
 #include "http_server.h"
+#include "led.h"
+#include "mdns.h"
+#include "settings.h"
 #include "wifi_ap.h"
+#include <stdio.h>
 
 static const char *TAG = "wifi";
 
@@ -22,6 +26,47 @@ static StaticSemaphore_t wifi_req_semaphore_mutex_buffer;
 static bool wifi_started = false;
 static bool wifi_has_ip_val = false;
 static bool wifi_ever_had_ip = false;
+static bool mdns_started = false;
+
+void printspy_wifi_get_id_suffix(char *out, size_t out_size) {
+  uint8_t mac[6] = {0};
+  esp_wifi_get_mac(WIFI_IF_STA, mac);
+  snprintf(out, out_size, "%02x%02x", mac[4], mac[5]);
+}
+
+// Idempotent - IP_EVENT_STA_GOT_IP can refire on reconnect.
+static void start_mdns(void) {
+  if (mdns_started) {
+    return;
+  }
+
+  char suffix[5];
+  printspy_wifi_get_id_suffix(suffix, sizeof(suffix));
+  char hostname[32];
+  const char *custom = printspy_nvs_get_hostname();
+  if (custom) {
+    snprintf(hostname, sizeof(hostname), "%s", custom);
+  } else {
+    snprintf(hostname, sizeof(hostname), "printspy-cam-%s", suffix);
+  }
+
+  esp_netif_t *sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+  if (sta_netif) {
+    esp_netif_set_hostname(sta_netif, hostname);
+  }
+
+  esp_err_t err = mdns_init();
+  if (err != ESP_OK) {
+    ESP_LOGW(TAG, "mdns_init failed: %s", esp_err_to_name(err));
+    return;
+  }
+  mdns_hostname_set(hostname);
+  mdns_instance_name_set("PrintSpy Cam");
+  mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+
+  mdns_started = true;
+  ESP_LOGI(TAG, "mDNS started - reachable at http://%s.local", hostname);
+}
 
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data) {
@@ -30,10 +75,12 @@ static void event_handler(void *arg, esp_event_base_t event_base,
   if (event_base == WIFI_EVENT) {
     switch (event_id) {
     case WIFI_EVENT_STA_START:
+      printspy_led_set_wifi_state(PRINTSPY_LED_WIFI_CONNECTING);
       xEventGroupSetBits(wifi_event_group_handle, WIFI_READY_TO_CONNECT_EVENT);
       break;
     case WIFI_EVENT_STA_DISCONNECTED:
       ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
+      printspy_led_set_wifi_state(PRINTSPY_LED_WIFI_CONNECTING);
       xEventGroupSetBits(wifi_event_group_handle, WIFI_READY_TO_CONNECT_EVENT);
       break;
     default:
@@ -47,6 +94,8 @@ static void event_handler(void *arg, esp_event_base_t event_base,
       wifi_ever_had_ip = true;
       ESP_LOGI(TAG, "Connected with IP Address:" IPSTR,
                IP2STR(&event->ip_info.ip));
+      printspy_led_set_wifi_state(PRINTSPY_LED_WIFI_CONNECTED);
+      start_mdns();
       // Idempotent - only starts the HTTP server on first IP.
       printspy_http_server_start();
       break;
@@ -93,6 +142,7 @@ bool printspy_wifi_has_credentials(void) {
 
 static void enter_ap_mode(bool is_fallback) {
   ESP_LOGI(TAG, "Entering AP provisioning mode (fallback=%d)", is_fallback);
+  printspy_led_set_wifi_state(PRINTSPY_LED_WIFI_AP_MODE);
   EventBits_t bits = WIFI_AP_MODE_ACTIVE_EVENT;
   if (is_fallback) {
     bits |= WIFI_AP_FALLBACK_EVENT;

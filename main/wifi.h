@@ -2,6 +2,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include <stdbool.h>
+#include <stddef.h>
 
 // STA-mode WiFi connection lifecycle, ported from bitclock-redux
 // (main/tasks/wifi.c). Runs as its own FreeRTOS task since AP fallback
@@ -34,3 +35,8 @@ void wifi_task_run(void *pvParameters);
 bool printspy_wifi_is_started(void);
 bool printspy_wifi_has_ip(void);
 bool printspy_wifi_has_credentials(void);
+
+// Writes a 4-hex-char device ID (last 2 bytes of the base MAC, e.g.
+// "a1b2") into out. out_size must be >= 5. Shared by the hostname and the
+// AP setup SSID so both default to a stable, unique-enough identifier.
+void printspy_wifi_get_id_suffix(char *out, size_t out_size);

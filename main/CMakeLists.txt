@@ -8,6 +8,7 @@ idf_component_register(
     "settings.c"
     "ota.c"
     "led.c"
+    "log.c"
   INCLUDE_DIRS
     "."
   EMBED_TXTFILES
@@ -24,6 +25,8 @@ idf_component_register(
     esp_wifi
     esp-tls
     json
+    led_strip
+    log
     mdns
     nvs_flash
 )
