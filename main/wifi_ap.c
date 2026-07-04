@@ -239,7 +239,7 @@ static esp_err_t handle_connect_body(httpd_req_t *req, const char *body) {
     printspy_wifi_get_id_suffix(id_suffix, sizeof(id_suffix));
     snprintf(hostname, sizeof(hostname), "printspy-cam-%s", id_suffix);
   }
-  char page[512];
+  char page[768];
   snprintf(page, sizeof(page), SUCCESS_PAGE_TEMPLATE, hostname, hostname);
 
   httpd_resp_set_type(req, "text/html");
