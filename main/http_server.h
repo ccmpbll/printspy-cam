@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esp_err.h"
+#include "esp_http_server.h"
 
 // Serves /, /snapshot, /stream, /api/status. Idempotent - safe to call
 // again on WiFi reconnect (only starts the server once).
