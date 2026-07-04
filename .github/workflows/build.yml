@@ -3,7 +3,19 @@ name: Build
 on:
   push:
     branches: ["**"]
+    paths:
+      - "main/**"
+      - "sdkconfig.defaults*"
+      - "partitions-*.csv"
+      - "CMakeLists.txt"
+      - ".github/workflows/build.yml"
   pull_request:
+    paths:
+      - "main/**"
+      - "sdkconfig.defaults*"
+      - "partitions-*.csv"
+      - "CMakeLists.txt"
+      - ".github/workflows/build.yml"
 
 jobs:
   build:
