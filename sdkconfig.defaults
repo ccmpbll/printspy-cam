@@ -4,9 +4,13 @@ CONFIG_PARTITION_TABLE_CUSTOM=y
 
 # Reduce binary size
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y
-CONFIG_LOG_DEFAULT_LEVEL_INFO=n
-CONFIG_LOG_DEFAULT_LEVEL_WARN=y
 CONFIG_NEWLIB_NANO_FORMAT=y
+
+# Left at INFO (the ESP-IDF default) rather than WARN - suppressing INFO
+# blinded us to every ESP_LOGI in our own code (WiFi connect attempts,
+# success/failure, AP start) during a real bring-up bug, with nothing in
+# the log to show for it. Revisit once things are actually working and
+# binary size matters more than visibility.
 
 # Required for AP-mode WiFi provisioning - off by default in ESP-IDF
 CONFIG_ESP_WIFI_SOFTAP_SUPPORT=y
