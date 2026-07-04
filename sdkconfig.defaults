@@ -1,0 +1,16 @@
+# Actual filename set per-target in sdkconfig.defaults.esp32(s3) - flash
+# size differs enough between boards (4MB vs 8MB) to need separate tables.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+
+# Reduce binary size
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+CONFIG_LOG_DEFAULT_LEVEL_INFO=n
+CONFIG_LOG_DEFAULT_LEVEL_WARN=y
+CONFIG_NEWLIB_NANO_FORMAT=y
+
+# Required for AP-mode WiFi provisioning - off by default in ESP-IDF
+CONFIG_ESP_WIFI_SOFTAP_SUPPORT=y
+
+# Browsers open several parallel connections to the setup/admin page and to
+# the MJPEG stream; default (10) can starve requests under real use.
+CONFIG_LWIP_MAX_SOCKETS=16

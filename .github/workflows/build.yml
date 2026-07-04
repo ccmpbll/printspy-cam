@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    name: Build (${{ matrix.board }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - board: freenove_s3
+            target: esp32s3
+            sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32s3"
+            kconfig: "CONFIG_BOARD_FREENOVE_S3=y"
+          - board: xiao_s3_sense
+            target: esp32s3
+            sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32s3"
+            kconfig: "CONFIG_BOARD_XIAO_S3_SENSE=y"
+          - board: ai_thinker
+            target: esp32
+            sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32"
+            kconfig: "CONFIG_BOARD_AI_THINKER=y"
+          - board: esp32_s3_eye
+            target: esp32s3
+            sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32s3"
+            kconfig: "CONFIG_BOARD_ESP32_S3_EYE=y"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select board
+        run: echo "${{ matrix.kconfig }}" >> sdkconfig.defaults
+
+      - name: Build firmware
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.3.4
+          target: ${{ matrix.target }}
+          sdkconfig_defaults: ${{ matrix.sdkconfig_defaults }}

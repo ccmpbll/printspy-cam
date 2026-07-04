@@ -1,0 +1,30 @@
+idf_component_register(
+  SRCS
+    "main.c"
+    "camera.c"
+    "http_server.c"
+    "wifi.c"
+    "wifi_ap.c"
+    "nvs.c"
+    "ota.c"
+    "led.c"
+  INCLUDE_DIRS
+    "."
+    "boards"
+  EMBED_FILES
+    "../web/setup.html"
+    "../web/admin.html"
+  REQUIRES
+    app_update
+    bootloader_support
+    driver
+    esp32-camera
+    esp_http_server
+    esp_netif
+    esp_partition
+    esp_wifi
+    esp-tls
+    json
+    mdns
+    nvs_flash
+)
