@@ -1,5 +1,6 @@
-# ESP-IDF Partition Table - 8MB flash (Freenove ESP32-S3 CAM, XIAO ESP32-S3
-# Sense, ESP32-S3-EYE)
+# ESP-IDF Partition Table - 8MB layout, used on Freenove ESP32-S3 CAM's 16MB
+# flash (leaves the upper 8MB unused for now) and on the 8MB-flash XIAO
+# ESP32-S3 Sense / ESP32-S3-EYE once those boards get real hardware to test.
 # Name,   Type, SubType, Offset,  Size, Flags
 nvs,      data, nvs,     0x9000,  0x4000,
 otadata,  data, ota,     0xd000,  0x2000,

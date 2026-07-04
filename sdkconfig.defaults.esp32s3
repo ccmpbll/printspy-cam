@@ -1,5 +1,15 @@
-# Freenove ESP32-S3 CAM, XIAO ESP32-S3 Sense, ESP32-S3-EYE (8MB flash/PSRAM)
+# Freenove ESP32-S3 CAM: 16MB flash / 8MB PSRAM (confirmed on real hardware -
+# was wrongly set to 8MB flash here, which made ESP-IDF only use the bottom
+# half of the chip and log a "Detected size larger than binary image header"
+# warning at boot; partitions-8m.csv still only lays out 8MB of it, leaving
+# the rest unused for now, which is harmless).
+#
+# XIAO ESP32-S3 Sense and ESP32-S3-EYE are reportedly 8MB flash per their
+# specs, but this file currently only needs to be correct for Freenove - it's
+# the only esp32s3 board in the CI matrix. Once either of those boards gets
+# added back (see build.yml/release.yml), flash size will need to move to
+# per-board config since it isn't uniform across all esp32s3 targets.
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions-8m.csv"
-CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
