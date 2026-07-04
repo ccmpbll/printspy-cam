@@ -165,15 +165,14 @@ static esp_err_t get_handler(httpd_req_t *req) {
   return ESP_OK;
 }
 
-static esp_err_t post_handler(httpd_req_t *req) {
-  char body[200] = {0};
-  int received = httpd_req_recv(req, body, sizeof(body) - 1);
-  if (received <= 0) {
-    httpd_resp_send_500(req);
-    return ESP_FAIL;
-  }
-  body[received] = '\0';
-
+// Shared by both the POST body handler and the GET query-string fallback -
+// both use the same key=val&key=val encoding, just from a different source.
+// The GET fallback exists because some clients (notably iOS/macOS's
+// captive-portal mini-browser, which auto-opens against an open AP with no
+// internet) have been observed sending GET instead of POST for this form -
+// without it the credentials silently 405 and the device never leaves AP
+// mode.
+static esp_err_t handle_connect_body(httpd_req_t *req, const char *body) {
   // Parse ssid=...&password=...
   char raw_ssid[64] = {0};
   char raw_password[128] = {0};
@@ -229,6 +228,40 @@ static esp_err_t post_handler(httpd_req_t *req) {
   return ESP_OK;
 }
 
+static esp_err_t post_handler(httpd_req_t *req) {
+  char body[200] = {0};
+  int received = httpd_req_recv(req, body, sizeof(body) - 1);
+  if (received <= 0) {
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
+  body[received] = '\0';
+  return handle_connect_body(req, body);
+}
+
+static esp_err_t connect_get_handler(httpd_req_t *req) {
+  size_t query_len = httpd_req_get_url_query_len(req);
+  if (query_len == 0) {
+    httpd_resp_set_status(req, "400 Bad Request");
+    httpd_resp_send(req, "Missing SSID", HTTPD_RESP_USE_STRLEN);
+    return ESP_FAIL;
+  }
+  char *query = malloc(query_len + 1);
+  if (!query) {
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
+  esp_err_t err = httpd_req_get_url_query_str(req, query, query_len + 1);
+  if (err != ESP_OK) {
+    free(query);
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
+  err = handle_connect_body(req, query);
+  free(query);
+  return err;
+}
+
 void printspy_wifi_ap_start(bool is_fallback) {
   ESP_LOGI(TAG, "Starting AP mode (fallback=%d)", is_fallback);
 
@@ -270,6 +303,14 @@ void printspy_wifi_ap_start(bool is_fallback) {
       .user_ctx = NULL,
   };
   httpd_register_uri_handler(http_server, &post_uri);
+
+  httpd_uri_t connect_get_uri = {
+      .uri = "/connect",
+      .method = HTTP_GET,
+      .handler = connect_get_handler,
+      .user_ctx = NULL,
+  };
+  httpd_register_uri_handler(http_server, &connect_get_uri);
 }
 
 void printspy_wifi_ap_stop(void) {
