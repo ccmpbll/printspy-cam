@@ -19,24 +19,20 @@ static uint64_t g_next_seq = 1;
 static portMUX_TYPE g_lock = portMUX_INITIALIZER_UNLOCKED;
 static vprintf_like_t g_orig_vprintf = NULL;
 
-// Strips ANSI SGR color escapes (esp_log's default format wraps every line
-// in "\033[0;3Xm...\033[0m") and trailing CR/LF - a browser <pre>/textarea
-// would otherwise show the raw escape bytes as garbage.
+// Strips the trailing CR/LF esp_log always appends. Not stripping ANSI
+// color codes here too: CONFIG_LOG_COLORS defaults to off in ESP-IDF
+// (colors are added by `idf.py monitor` client-side, not the firmware),
+// and nothing in this project's sdkconfig turns it on, so the raw
+// vprintf format string never actually contains them.
 static void clean_line(char *dst, size_t dst_size, const char *src) {
-  size_t di = 0;
-  for (size_t si = 0; src[si] != '\0' && di + 1 < dst_size; si++) {
-    if (src[si] == '\033' && src[si + 1] == '[') {
-      si += 2;
-      while (src[si] != '\0' && src[si] != 'm') {
-        si++;
-      }
-      continue; // si now on 'm' (or end of string), loop's si++ advances past it
-    }
-    dst[di++] = src[si];
+  size_t len = strlen(src);
+  if (len >= dst_size) {
+    len = dst_size - 1;
   }
-  dst[di] = '\0';
-  while (di > 0 && (dst[di - 1] == '\r' || dst[di - 1] == '\n')) {
-    dst[--di] = '\0';
+  memcpy(dst, src, len);
+  dst[len] = '\0';
+  while (len > 0 && (dst[len - 1] == '\r' || dst[len - 1] == '\n')) {
+    dst[--len] = '\0';
   }
 }
 

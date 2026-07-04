@@ -11,8 +11,9 @@ typedef enum {
 
 esp_err_t printspy_led_init(void);
 
-// brightness: 0-255. Manual override (e.g. for use as a camera flash) -
-// takes effect immediately, independent of the WiFi status pattern below.
+// brightness: 0-255. No caller yet (reserved for a future camera-flash
+// use) - sets the LED directly, doesn't coordinate with the WiFi status
+// pattern below, so calling both will visibly fight each other.
 esp_err_t printspy_led_set_brightness(uint8_t brightness);
 
 // Drives the onboard status LED through a state-specific blink pattern

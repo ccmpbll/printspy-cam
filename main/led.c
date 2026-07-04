@@ -12,7 +12,6 @@ static led_strip_handle_t strip = NULL;
 static esp_timer_handle_t blink_timer = NULL;
 static printspy_led_wifi_state_t wifi_state = PRINTSPY_LED_WIFI_AP_MODE;
 static bool blink_on = false;
-static uint8_t manual_brightness = 0; // 0 = status pattern controls the LED
 
 #define BLINK_INTERVAL_AP_MODE_US (500 * 1000)
 #define BLINK_INTERVAL_CONNECTING_US (150 * 1000)
@@ -26,10 +25,6 @@ static void apply_color(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 static void blink_tick(void *arg) {
-  if (manual_brightness > 0) {
-    return; // manual override active, pattern paused
-  }
-
   switch (wifi_state) {
   case PRINTSPY_LED_WIFI_AP_MODE:
     blink_on = !blink_on;
@@ -92,7 +87,6 @@ esp_err_t printspy_led_init(void) {
 }
 
 esp_err_t printspy_led_set_brightness(uint8_t brightness) {
-  manual_brightness = brightness;
   if (brightness > 0) {
     apply_color(brightness, brightness, brightness);
   } else if (strip) {
