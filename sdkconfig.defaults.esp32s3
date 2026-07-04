@@ -13,3 +13,13 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions-8m.csv"
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
+
+# esp32-camera defaults this to OFF even on boards with PSRAM (Kconfig
+# option CAMERA_PSRAM_DMA in the esp32-camera component). Without it,
+# frame capture goes through a small intermediate SRAM buffer instead of
+# DMA'ing straight from PSRAM - on real hardware this showed up as
+# constant "cam_hal: NO-SOI - JPEG start marker missing" / "EV-EOF-OVF"
+# warnings and eventually a hard capture timeout (0 frames ever
+# delivered). Enabling it lets DMA write directly into the PSRAM frame
+# buffers cam_hal already allocates there.
+CONFIG_CAMERA_PSRAM_DMA=y
