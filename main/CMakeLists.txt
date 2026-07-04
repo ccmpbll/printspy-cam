@@ -12,7 +12,6 @@ idf_component_register(
     "."
     "boards"
   EMBED_FILES
-    "../web/setup.html"
     "../web/admin.html"
   REQUIRES
     app_update

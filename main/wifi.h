@@ -1,13 +1,36 @@
 #pragma once
 
-#include "esp_err.h"
+#include "freertos/FreeRTOS.h"
 #include <stdbool.h>
 
-// STA-mode WiFi connection lifecycle. AP-mode provisioning lives in wifi_ap.h.
-// TODO: port state machine from bitclock-redux (main/tasks/wifi.c) - STA
-// connect with 10-retry AP fallback, silent unlimited retry on a
-// mid-session disconnect once we've ever had an IP.
+// STA-mode WiFi connection lifecycle, ported from bitclock-redux
+// (main/tasks/wifi.c). Runs as its own FreeRTOS task since AP fallback
+// blocks forever until the device reboots - see wifi_task_run.
+//
+// State machine:
+//   No STA credentials stored -> AP provisioning mode (wifi_ap.h), blocks
+//     until the user submits WiFi creds via the setup page, then reboots.
+//   Credentials stored -> STA connect. Every disconnect event re-triggers
+//     a connect attempt. Before the first successful IP, attempts are
+//     capped at WIFI_MAX_BOOT_RETRIES - exhausting them falls back to AP
+//     mode (credentials are probably wrong). After the first successful
+//     IP, disconnects retry silently and unlimited (assume transient
+//     network blip, never kick the user back into reconfiguring).
 
-esp_err_t printspy_wifi_init_sta(void);
+#define WIFI_STACK_SIZE 1024 * 4
+
+#define WIFI_READY_TO_CONNECT_EVENT BIT1
+#define WIFI_AP_MODE_ACTIVE_EVENT BIT2
+#define WIFI_AP_FALLBACK_EVENT BIT3
+extern EventGroupHandle_t wifi_event_group_handle;
+
+extern SemaphoreHandle_t wifi_req_semaphore;
+
+extern StaticTask_t wifiTaskBuffer;
+extern StackType_t wifiTaskStack[WIFI_STACK_SIZE];
+
+void wifi_task_run(void *pvParameters);
+
+bool printspy_wifi_is_started(void);
 bool printspy_wifi_has_ip(void);
 bool printspy_wifi_has_credentials(void);

@@ -1,9 +1,11 @@
 #pragma once
 
-#include "esp_err.h"
+#include <stdbool.h>
 
-// AP-mode WiFi provisioning (softAP + setup.html config page at 192.168.4.1).
-// TODO: port from bitclock-redux (main/tasks/wifi_ap.c).
+// AP-mode WiFi provisioning, ported from bitclock-redux
+// (main/tasks/wifi_ap.c). SoftAP + a setup page at 192.168.4.1 with a
+// network-scan dropdown; submitting credentials writes them via
+// esp_wifi_set_config (which persists to NVS on its own) and reboots.
 
-esp_err_t printspy_wifi_ap_start(void);
-esp_err_t printspy_wifi_ap_stop(void);
+void printspy_wifi_ap_start(bool is_fallback);
+void printspy_wifi_ap_stop(void);

@@ -6,7 +6,6 @@
 #include "nvs_flash.h"
 #include "version.h"
 #include "wifi.h"
-#include "wifi_ap.h"
 
 static const char *TAG = "printspy_cam";
 
@@ -24,12 +23,8 @@ void app_main(void) {
   ESP_ERROR_CHECK(printspy_led_init());
   ESP_ERROR_CHECK(printspy_camera_init());
 
-  if (printspy_wifi_has_credentials()) {
-    ESP_ERROR_CHECK(printspy_wifi_init_sta());
-  } else {
-    ESP_LOGI(TAG, "no WiFi credentials stored, starting setup AP");
-    ESP_ERROR_CHECK(printspy_wifi_ap_start());
-  }
-
-  ESP_ERROR_CHECK(printspy_http_server_start());
+  // WiFi runs as its own task - AP fallback mode blocks forever until the
+  // device reboots, so it can't live on app_main's own stack/task.
+  xTaskCreateStatic(wifi_task_run, "wifi_task", WIFI_STACK_SIZE, NULL,
+                    tskIDLE_PRIORITY + 1, wifiTaskStack, &wifiTaskBuffer);
 }

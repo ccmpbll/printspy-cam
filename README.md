@@ -9,14 +9,18 @@ camera-streamer source, no backend changes needed.
 > Status: early scaffolding, not yet functional. See `notes/printspy-cam.md`
 > in the ClaudeCode workspace for the full design doc.
 
-## Supported boards
+## Board support
 
-- Freenove ESP32-S3 CAM (primary target)
-- Seeed XIAO ESP32-S3 Sense
-- AI-Thinker ESP32-CAM
-- ESP32-S3-EYE (Espressif reference board)
+| Board | Status |
+|---|---|
+| Freenove ESP32-S3 CAM | Primary target — pin mapping verified |
+| Seeed XIAO ESP32-S3 Sense | Planned — pin mapping unverified, no hardware to test against yet |
+| AI-Thinker ESP32-CAM | Planned — pin mapping unverified, no hardware to test against yet |
+| ESP32-S3-EYE (Espressif) | Planned — pin mapping unverified, no hardware to test against yet |
 
-Select with `idf.py menuconfig` under "PrintSpy Cam Configuration".
+CI builds all four as a compile check, but only Freenove has actually been
+flashed and run. Select target with `idf.py menuconfig` under "PrintSpy Cam
+Configuration".
 
 ## Building
 
