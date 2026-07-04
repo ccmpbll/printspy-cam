@@ -10,7 +10,7 @@ idf_component_register(
     "led.c"
   INCLUDE_DIRS
     "."
-  EMBED_FILES
+  EMBED_TXTFILES
     "../web/admin.html"
   REQUIRES
     app_update
