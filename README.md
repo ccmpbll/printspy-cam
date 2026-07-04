@@ -17,9 +17,10 @@ camera-streamer source, no backend changes needed.
 | AI-Thinker ESP32-CAM | Planned — pin mapping unverified, no hardware to test against yet |
 | ESP32-S3-EYE (Espressif) | Planned — pin mapping unverified, no hardware to test against yet |
 
-CI builds all four as a compile check, but only Freenove has actually been
-flashed and run. Select target with `idf.py menuconfig` under "PrintSpy Cam
-Configuration".
+CI only builds Freenove, the one board with verified pins and real hardware
+to test against — the other three are selectable via `idf.py menuconfig`
+under "PrintSpy Cam Configuration" but unverified; add them to CI once
+someone tests on that hardware.
 
 ## Building
 

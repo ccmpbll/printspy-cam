@@ -16,22 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Only boards we actually have hardware to test against - see
+          # build.yml for why the other three aren't here.
           - board: freenove_s3
             target: esp32s3
             sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32s3"
             kconfig: "CONFIG_BOARD_FREENOVE_S3=y"
-          - board: xiao_s3_sense
-            target: esp32s3
-            sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32s3"
-            kconfig: "CONFIG_BOARD_XIAO_S3_SENSE=y"
-          - board: ai_thinker
-            target: esp32
-            sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32"
-            kconfig: "CONFIG_BOARD_AI_THINKER=y"
-          - board: esp32_s3_eye
-            target: esp32s3
-            sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32s3"
-            kconfig: "CONFIG_BOARD_ESP32_S3_EYE=y"
 
     steps:
       - name: Checkout
