@@ -33,7 +33,6 @@ jobs:
           # someone tests on that board.
           - board: freenove_s3
             target: esp32s3
-            sdkconfig_defaults: "sdkconfig.defaults;sdkconfig.defaults.esp32s3"
             kconfig: "CONFIG_BOARD_FREENOVE_S3=y"
 
     steps:
@@ -48,4 +47,3 @@ jobs:
         with:
           esp_idf_version: v5.3.4
           target: ${{ matrix.target }}
-          sdkconfig_defaults: ${{ matrix.sdkconfig_defaults }}
