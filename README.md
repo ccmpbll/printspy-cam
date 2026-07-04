@@ -6,8 +6,7 @@ stream over HTTP. [PrintSpy](https://github.com/ccmpbll/printspy) points at
 it directly as a standalone webcam URL — same as any mjpg-streamer or
 camera-streamer source, no backend changes needed.
 
-> Status: early scaffolding, not yet functional. See `notes/printspy-cam.md`
-> in the ClaudeCode workspace for the full design doc.
+> Status: early scaffolding, not yet functional.
 
 ## Board support
 
