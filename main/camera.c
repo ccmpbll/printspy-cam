@@ -48,7 +48,11 @@ esp_err_t printspy_camera_init(void) {
       .jpeg_quality = stored_quality ? stored_quality : DEFAULT_JPEG_QUALITY,
       .fb_count = 2,
       .fb_location = CAMERA_FB_IN_PSRAM,
-      .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
+      // LATEST, not WHEN_EMPTY: if a reader (the MJPEG stream loop) falls
+      // even slightly behind the sensor, WHEN_EMPTY serves whatever's
+      // already queued - a stale frame - instead of dropping it for the
+      // current one. Pure added lag, unrelated to capture/encode cost.
+      .grab_mode = CAMERA_GRAB_LATEST,
   };
 
   esp_err_t err = esp_camera_init(&config);
