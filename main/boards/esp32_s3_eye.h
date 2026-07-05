@@ -21,6 +21,3 @@
 #define CAM_PIN_VSYNC 6
 #define CAM_PIN_HREF 7
 #define CAM_PIN_PCLK 13
-
-#define LED_GPIO_NUM -1 // no dedicated flash LED on this board
-#define LED_IS_NEOPIXEL 0

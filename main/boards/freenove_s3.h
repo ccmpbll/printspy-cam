@@ -28,6 +28,3 @@
 #define CAM_PIN_VSYNC 6
 #define CAM_PIN_HREF 7
 #define CAM_PIN_PCLK 13
-
-#define LED_GPIO_NUM 48 // onboard WS2812B, not a plain PWM LED - led.c must special-case this board
-#define LED_IS_NEOPIXEL 1

@@ -7,7 +7,6 @@ idf_component_register(
     "wifi_ap.c"
     "settings.c"
     "ota.c"
-    "led.c"
     "log.c"
   INCLUDE_DIRS
     "."
@@ -25,7 +24,6 @@ idf_component_register(
     esp_wifi
     esp-tls
     json
-    led_strip
     log
     mdns
     nvs_flash

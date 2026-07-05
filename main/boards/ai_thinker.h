@@ -21,6 +21,3 @@
 #define CAM_PIN_VSYNC 25
 #define CAM_PIN_HREF 23
 #define CAM_PIN_PCLK 22
-
-#define LED_GPIO_NUM 4 // shared with SD card D1 - board has no MicroSD slot exposed when used as flash LED
-#define LED_IS_NEOPIXEL 0

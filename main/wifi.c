@@ -4,7 +4,6 @@
 #include "esp_netif.h"
 #include "esp_wifi.h"
 #include "http_server.h"
-#include "led.h"
 #include "mdns.h"
 #include "wifi_ap.h"
 #include <stdio.h>
@@ -67,12 +66,10 @@ static void event_handler(void *arg, esp_event_base_t event_base,
   if (event_base == WIFI_EVENT) {
     switch (event_id) {
     case WIFI_EVENT_STA_START:
-      printspy_led_set_wifi_state(PRINTSPY_LED_WIFI_CONNECTING);
       xEventGroupSetBits(wifi_event_group_handle, WIFI_READY_TO_CONNECT_EVENT);
       break;
     case WIFI_EVENT_STA_DISCONNECTED:
       ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
-      printspy_led_set_wifi_state(PRINTSPY_LED_WIFI_CONNECTING);
       xEventGroupSetBits(wifi_event_group_handle, WIFI_READY_TO_CONNECT_EVENT);
       break;
     default:
@@ -85,7 +82,6 @@ static void event_handler(void *arg, esp_event_base_t event_base,
       wifi_ever_had_ip = true;
       ESP_LOGI(TAG, "Connected with IP Address:" IPSTR,
                IP2STR(&event->ip_info.ip));
-      printspy_led_set_wifi_state(PRINTSPY_LED_WIFI_CONNECTED);
       start_mdns();
       // Idempotent - only starts the HTTP server on first IP.
       printspy_http_server_start();
@@ -126,7 +122,6 @@ bool printspy_wifi_has_credentials(void) {
 
 static void enter_ap_mode(bool is_fallback) {
   ESP_LOGI(TAG, "Entering AP provisioning mode (fallback=%d)", is_fallback);
-  printspy_led_set_wifi_state(PRINTSPY_LED_WIFI_AP_MODE);
   EventBits_t bits = WIFI_AP_MODE_ACTIVE_EVENT;
   if (is_fallback) {
     bits |= WIFI_AP_FALLBACK_EVENT;

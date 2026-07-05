@@ -1,6 +1,5 @@
 #include "camera.h"
 #include "esp_log.h"
-#include "led.h"
 #include "log.h"
 #include "nvs_flash.h"
 #include "settings.h"
@@ -23,7 +22,6 @@ void app_main(void) {
   ESP_ERROR_CHECK(err);
   ESP_ERROR_CHECK(printspy_nvs_init());
 
-  ESP_ERROR_CHECK(printspy_led_init());
   ESP_ERROR_CHECK(printspy_camera_init());
 
   // WiFi runs as its own task - AP fallback mode blocks forever until the
