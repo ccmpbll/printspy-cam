@@ -8,8 +8,6 @@
 #include "freenove_s3.h"
 #elif CONFIG_BOARD_XIAO_S3_SENSE
 #include "xiao_s3_sense.h"
-#elif CONFIG_BOARD_AI_THINKER
-#include "ai_thinker.h"
 #elif CONFIG_BOARD_ESP32_S3_EYE
 #include "esp32_s3_eye.h"
 #else

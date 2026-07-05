@@ -26,11 +26,11 @@ jobs:
       matrix:
         include:
           # Only boards we actually have hardware to test against. The
-          # other three (xiao_s3_sense, ai_thinker, esp32_s3_eye) have
-          # unverified pin mappings - compiling them would only prove the
-          # code parses, not that the pins are right, and nobody catches a
-          # wrong pin until real hardware shows up. Add them back here once
-          # someone tests on that board.
+          # other two (xiao_s3_sense, esp32_s3_eye) have unverified pin
+          # mappings - compiling them would only prove the code parses,
+          # not that the pins are right, and nobody catches a wrong pin
+          # until real hardware shows up. Add them back here once someone
+          # tests on that board.
           - board: freenove_s3
             target: esp32s3
             kconfig: "CONFIG_BOARD_FREENOVE_S3=y"

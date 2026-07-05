@@ -18,7 +18,7 @@ jobs:
       matrix:
         include:
           # Only boards we actually have hardware to test against - see
-          # build.yml for why the other three aren't here.
+          # build.yml for why the other two aren't here.
           - board: freenove_s3
             target: esp32s3
             kconfig: "CONFIG_BOARD_FREENOVE_S3=y"

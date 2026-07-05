@@ -12,10 +12,6 @@ menu "PrintSpy Cam Configuration"
             bool "Seeed XIAO ESP32-S3 Sense"
             depends on IDF_TARGET_ESP32S3
 
-        config BOARD_AI_THINKER
-            bool "AI-Thinker ESP32-CAM"
-            depends on IDF_TARGET_ESP32
-
         config BOARD_ESP32_S3_EYE
             bool "ESP32-S3-EYE (Espressif)"
             depends on IDF_TARGET_ESP32S3

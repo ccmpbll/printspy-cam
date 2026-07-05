@@ -14,11 +14,10 @@ camera-streamer source, no backend changes needed.
 |---|---|
 | Freenove ESP32-S3 CAM | Primary target — pin mapping verified |
 | Seeed XIAO ESP32-S3 Sense | Planned — pin mapping unverified, no hardware to test against yet |
-| AI-Thinker ESP32-CAM | Planned — pin mapping unverified, no hardware to test against yet |
 | ESP32-S3-EYE (Espressif) | Planned — pin mapping unverified, no hardware to test against yet |
 
 CI only builds Freenove, the one board with verified pins and real hardware
-to test against — the other three are selectable via `idf.py menuconfig`
+to test against — the other two are selectable via `idf.py menuconfig`
 under "PrintSpy Cam Configuration" but unverified; add them to CI once
 someone tests on that hardware.
 
@@ -27,7 +26,7 @@ someone tests on that hardware.
 Requires [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html) >= 5.3.
 
 ```bash
-idf.py set-target esp32s3   # or esp32 for AI-Thinker
+idf.py set-target esp32s3
 idf.py menuconfig           # select board under "PrintSpy Cam Configuration"
 idf.py build
 idf.py -p PORT flash monitor
