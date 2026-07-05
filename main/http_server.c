@@ -457,6 +457,14 @@ esp_err_t printspy_http_server_start(void) {
   // (admin page, /snapshot, /api/status) to stay responsive at the same time.
   config.max_open_sockets = STREAM_WORKER_COUNT + LOG_WORKER_COUNT + 4;
   config.lru_purge_enable = true;
+  // Without TCP keepalive, a stale /api/logs connection (phone sleeps,
+  // wifi drops) never gets detected as dead - it just sits there holding
+  // the only log worker slot forever, so the next reconnect gets a 503
+  // that EventSource treats as permanent (no auto-retry on non-2xx).
+  config.keep_alive_enable = true;
+  config.keep_alive_idle = 5;
+  config.keep_alive_interval = 5;
+  config.keep_alive_count = 3;
 
   esp_err_t err = httpd_start(&server, &config);
   if (err != ESP_OK) {
