@@ -54,6 +54,17 @@ white-space:pre-wrap;word-break:break-all;border:1px solid var(--border);}
 
 <div class="card">
   <h2>Camera</h2>
+  <label for="resolution">Resolution</label>
+  <select id="resolution">
+    <option value="8">VGA (640x480, fastest stream)</option>
+    <option value="9">SVGA (800x600)</option>
+    <option value="10">XGA (1024x768)</option>
+    <option value="11">HD (1280x720, default)</option>
+    <option value="12">SXGA (1280x1024)</option>
+    <option value="13">UXGA (1600x1200, slowest stream)</option>
+  </select>
+  <label for="quality">JPEG quality (<span id="quality-val">12</span>, lower = better/slower)</label>
+  <input type="range" id="quality" min="4" max="40" step="1">
   <div class="row"><span>Flip horizontally</span><input type="checkbox" id="hmirror"></div>
   <div class="row"><span>Flip vertically</span><input type="checkbox" id="vflip"></div>
   <label for="brightness">Brightness (<span id="brightness-val">0</span>)</label>
@@ -116,10 +127,13 @@ function refreshCameraSettings() {
     document.getElementById('contrast-val').textContent = s.contrast;
     document.getElementById('saturation').value = s.saturation;
     document.getElementById('saturation-val').textContent = s.saturation;
+    document.getElementById('resolution').value = s.resolution;
+    document.getElementById('quality').value = s.quality;
+    document.getElementById('quality-val').textContent = s.quality;
   }).catch(() => {});
 }
 
-['brightness', 'contrast', 'saturation'].forEach(id => {
+['brightness', 'contrast', 'saturation', 'quality'].forEach(id => {
   document.getElementById(id).addEventListener('input', e => {
     document.getElementById(id + '-val').textContent = e.target.value;
   });
@@ -132,6 +146,8 @@ document.getElementById('save-camera').addEventListener('click', () => {
     brightness: parseInt(document.getElementById('brightness').value, 10),
     contrast: parseInt(document.getElementById('contrast').value, 10),
     saturation: parseInt(document.getElementById('saturation').value, 10),
+    resolution: parseInt(document.getElementById('resolution').value, 10),
+    quality: parseInt(document.getElementById('quality').value, 10),
   };
   fetch('/api/settings', {method: 'POST', body: JSON.stringify(body)})
     .then(() => showMsg('Camera settings saved.'))

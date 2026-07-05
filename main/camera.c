@@ -6,18 +6,17 @@
 
 static const char *TAG = "printspy_camera";
 
-// ponytail: NVS resolution/quality default to 0 when never set (nothing
-// writes them yet - the settings UI doesn't exist). 0 happens to be a
-// valid framesize_t (FRAMESIZE_96X96), so it can't double as "unset".
-// Treat 0 as unset and fall back to the plan's stated defaults; revisit
-// once the settings UI can actually persist a real first value.
+// ponytail: NVS resolution/quality default to 0 when never set. 0 happens
+// to be a valid framesize_t (FRAMESIZE_96X96), so it can't double as
+// "unset" - treat 0 as unset and fall back to these defaults.
 //
-// VGA, not HD: PSRAM DMA is off (see sdkconfig.defaults.esp32s3 - broken
-// for JPEG, espressif/esp32-camera#775), so every frame buffer gets
-// CPU-copied through internal SRAM instead of DMA'd straight to PSRAM.
-// At HD that copy plus the larger JPEG over wifi made /stream noticeably
-// laggy; VGA is 1/4 the pixels and plenty for print-monitoring.
-#define DEFAULT_FRAMESIZE FRAMESIZE_VGA
+// HD default: PSRAM DMA is off (see sdkconfig.defaults.esp32s3 - broken
+// for JPEG, espressif/esp32-camera#775), so bigger frames cost real,
+// physical time to scan out of the sensor and to ship over wifi - no
+// firmware config makes that free. Resolution and quality are both
+// live-adjustable from the admin UI (settings_get/post_handler in
+// http_server.c) so that trade is a dial, not a hardcoded default.
+#define DEFAULT_FRAMESIZE FRAMESIZE_HD
 #define DEFAULT_JPEG_QUALITY 12
 
 esp_err_t printspy_camera_init(void) {

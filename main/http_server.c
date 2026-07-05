@@ -319,6 +319,15 @@ static esp_err_t settings_get_handler(httpd_req_t *req) {
   cJSON_AddNumberToObject(root, "contrast", printspy_nvs_get_cam_contrast());
   cJSON_AddNumberToObject(root, "saturation", printspy_nvs_get_cam_saturation());
 
+  // Live values from the sensor, not raw NVS - NVS reads back 0 ("unset")
+  // until the user actually changes these once, but the sensor always
+  // knows what it's really running at.
+  sensor_t *sensor = esp_camera_sensor_get();
+  if (sensor) {
+    cJSON_AddNumberToObject(root, "resolution", sensor->status.framesize);
+    cJSON_AddNumberToObject(root, "quality", sensor->status.quality);
+  }
+
   char *json = cJSON_PrintUnformatted(root);
   httpd_resp_set_type(req, "application/json");
   esp_err_t res = httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
@@ -377,6 +386,23 @@ static esp_err_t settings_post_handler(httpd_req_t *req) {
     int8_t val = (int8_t)item->valueint;
     printspy_nvs_set_cam_saturation(val);
     if (sensor) sensor->set_saturation(sensor, val);
+  }
+
+  // FRAMESIZE_96X96 (0) .. FRAMESIZE_UXGA (13) - the full range esp32-camera
+  // defines for OV3660/OV2640. Anything outside that can't be a real
+  // framesize_t the sensor supports.
+  item = cJSON_GetObjectItem(json, "resolution");
+  if (cJSON_IsNumber(item) && item->valueint >= 0 && item->valueint <= 13) {
+    uint8_t val = (uint8_t)item->valueint;
+    printspy_nvs_set_resolution(val);
+    if (sensor) sensor->set_framesize(sensor, (framesize_t)val);
+  }
+
+  item = cJSON_GetObjectItem(json, "quality");
+  if (cJSON_IsNumber(item) && item->valueint >= 4 && item->valueint <= 63) {
+    uint8_t val = (uint8_t)item->valueint;
+    printspy_nvs_set_quality(val);
+    if (sensor) sensor->set_quality(sensor, val);
   }
 
   cJSON_Delete(json);
