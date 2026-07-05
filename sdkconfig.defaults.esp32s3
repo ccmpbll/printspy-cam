@@ -14,6 +14,12 @@ CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 
+# 240MHz is the S3's rated max, not an overclock - was defaulting to
+# ESP-IDF's stock 160MHz. Software JPEG encode (OV3660 has no onboard
+# encoder) is our actual CPU-bound bottleneck, so this is free headroom.
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ=240
+
 # CONFIG_CAMERA_PSRAM_DMA intentionally left at its default (off). It was
 # tried here to chase "NO-SOI"/"EV-EOF-OVF" errors, but that turned out to
 # be a transposed D5/D7 pin (fixed in boards/freenove_s3.h) - the real
