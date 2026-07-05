@@ -177,6 +177,17 @@ document.getElementById('stream-toggle').addEventListener('click', e => {
   previewImg.src = streaming ? '/stream' : ('/snapshot?t=' + Date.now());
 });
 
+// <img> doesn't retry a dropped multipart stream on its own (unlike the
+// log console's EventSource) - a transient disconnect otherwise shows a
+// broken image forever until the toggle is clicked manually.
+previewImg.addEventListener('error', () => {
+  if (streaming) {
+    setTimeout(() => {
+      if (streaming) previewImg.src = '/stream?t=' + Date.now();
+    }, 1000);
+  }
+});
+
 let otaInProgress = false;
 document.getElementById('upload-ota').addEventListener('click', () => {
   const fileInput = document.getElementById('ota-file');
