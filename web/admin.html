@@ -97,7 +97,8 @@ white-space:pre-wrap;word-break:break-all;border:1px solid var(--border);}
 
 <div class="card">
   <h2>Log console</h2>
-  <div id="logs"></div>
+  <button id="logs-toggle" style="margin-bottom:8px;">Show logs</button>
+  <div id="logs" style="display:none;"></div>
 </div>
 
 <p id="msg"></p>
@@ -212,15 +213,30 @@ document.getElementById('upload-ota').addEventListener('click', () => {
 const logsEl = document.getElementById('logs');
 const LOG_MAX_LINES = 500;
 let logLines = [];
-const logSource = new EventSource('/api/logs');
-logSource.onmessage = e => {
-  logLines.push(e.data);
-  if (logLines.length > LOG_MAX_LINES) {
-    logLines = logLines.slice(-LOG_MAX_LINES);
+let logSource = null;
+
+document.getElementById('logs-toggle').addEventListener('click', e => {
+  if (logSource) {
+    logSource.close();
+    logSource = null;
+    logsEl.style.display = 'none';
+    logsEl.textContent = '';
+    logLines = [];
+    e.target.textContent = 'Show logs';
+    return;
   }
-  logsEl.textContent = logLines.join('\n') + '\n';
-  logsEl.scrollTop = logsEl.scrollHeight;
-};
+  logsEl.style.display = 'block';
+  e.target.textContent = 'Hide logs';
+  logSource = new EventSource('/api/logs');
+  logSource.onmessage = ev => {
+    logLines.push(ev.data);
+    if (logLines.length > LOG_MAX_LINES) {
+      logLines = logLines.slice(-LOG_MAX_LINES);
+    }
+    logsEl.textContent = logLines.join('\n') + '\n';
+    logsEl.scrollTop = logsEl.scrollHeight;
+  };
+});
 
 refreshStatus();
 refreshCameraSettings();
