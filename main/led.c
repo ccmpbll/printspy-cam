@@ -28,11 +28,11 @@ static void blink_tick(void *arg) {
   switch (wifi_state) {
   case PRINTSPY_LED_WIFI_AP_MODE:
     blink_on = !blink_on;
-    apply_color(0, 0, blink_on ? 40 : 0);
+    apply_color(0, 0, blink_on ? 255 : 0);
     break;
   case PRINTSPY_LED_WIFI_CONNECTING:
     blink_on = !blink_on;
-    apply_color(blink_on ? 40 : 0, blink_on ? 25 : 0, 0);
+    apply_color(blink_on ? 255 : 0, blink_on ? 160 : 0, 0);
     break;
   case PRINTSPY_LED_WIFI_CONNECTED:
     // Fires once via esp_timer_start_once (see printspy_led_set_wifi_state)
@@ -102,7 +102,7 @@ esp_err_t printspy_led_set_wifi_state(printspy_led_wifi_state_t state) {
   if (state == PRINTSPY_LED_WIFI_CONNECTED) {
     if (blink_timer) {
       esp_timer_stop(blink_timer); // stop while running is a no-op error if already stopped, ignored
-      apply_color(0, 60, 0);       // brief green flash
+      apply_color(0, 255, 0);      // brief green flash
       esp_timer_start_once(blink_timer, 400 * 1000); // blink_tick fires once, turns it back off
     }
     return ESP_OK;
