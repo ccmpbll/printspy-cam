@@ -12,10 +12,12 @@ static const char *TAG = "printspy_camera";
 // Treat 0 as unset and fall back to the plan's stated defaults; revisit
 // once the settings UI can actually persist a real first value.
 //
-// Back to HD - dropping to VGA was a red herring while chasing "NO-EOI"
-// (same failure at VGA too, so it was never about resolution/bandwidth -
-// see sdkconfig.defaults.esp32s3 for the real cause, PSRAM DMA mode).
-#define DEFAULT_FRAMESIZE FRAMESIZE_HD
+// VGA, not HD: PSRAM DMA is off (see sdkconfig.defaults.esp32s3 - broken
+// for JPEG, espressif/esp32-camera#775), so every frame buffer gets
+// CPU-copied through internal SRAM instead of DMA'd straight to PSRAM.
+// At HD that copy plus the larger JPEG over wifi made /stream noticeably
+// laggy; VGA is 1/4 the pixels and plenty for print-monitoring.
+#define DEFAULT_FRAMESIZE FRAMESIZE_VGA
 #define DEFAULT_JPEG_QUALITY 12
 
 esp_err_t printspy_camera_init(void) {
