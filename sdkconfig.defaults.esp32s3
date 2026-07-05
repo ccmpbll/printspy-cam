@@ -14,11 +14,15 @@ CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 
-# 240MHz is the S3's rated max, not an overclock - was defaulting to
-# ESP-IDF's stock 160MHz. Software JPEG encode (OV3660 has no onboard
-# encoder) is our actual CPU-bound bottleneck, so this is free headroom.
-CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
-CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ=240
+# Tried CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240 (up from ESP-IDF's stock
+# 160MHz) on the theory that software JPEG encode is our CPU-bound
+# bottleneck. Real hardware data said otherwise: 50 /snapshot samples at
+# 240MHz averaged ~1.1s (worst case 4.2s) vs. ~0.52s at stock 160MHz
+# (worst case 1.83s) - consistent across three separate batches, not
+# noise. No known mechanism explains it (camera peripheral clock is a
+# separate fixed 80MHz APB bus, shouldn't care about CPU frequency) -
+# leading theory is 240MHz plus WIFI_PS_NONE together raise average
+# current draw enough to matter even on a "good" PSU. Left at stock.
 
 # CONFIG_CAMERA_PSRAM_DMA intentionally left at its default (off). It was
 # tried here to chase "NO-SOI"/"EV-EOF-OVF" errors, but that turned out to
