@@ -177,17 +177,25 @@ document.getElementById('stream-toggle').addEventListener('click', e => {
   previewImg.src = streaming ? '/stream' : ('/snapshot?t=' + Date.now());
 });
 
+let otaInProgress = false;
 document.getElementById('upload-ota').addEventListener('click', () => {
   const fileInput = document.getElementById('ota-file');
   const file = fileInput.files[0];
   if (!file) { showMsg('Choose a .bin file first.'); return; }
   showMsg('Uploading firmware...');
+  // /snapshot and /api/status are synchronous handlers on the same single
+  // httpd task as /api/ota - polling them during the upload starves the
+  // OTA transfer (recv timeouts) instead of running alongside it.
+  otaInProgress = true;
   fetch('/api/ota', {method: 'POST', body: file})
     .then(r => {
       if (!r.ok) throw new Error();
       showMsg('Upload complete, restarting...');
     })
-    .catch(() => showMsg('Firmware upload failed.'));
+    .catch(() => {
+      otaInProgress = false;
+      showMsg('Firmware upload failed.');
+    });
 });
 
 const logsEl = document.getElementById('logs');
@@ -205,9 +213,13 @@ logSource.onmessage = e => {
 
 refreshStatus();
 refreshCameraSettings();
-setInterval(refreshStatus, 5000);
 setInterval(() => {
-  if (!streaming) {
+  if (!otaInProgress) {
+    refreshStatus();
+  }
+}, 5000);
+setInterval(() => {
+  if (!streaming && !otaInProgress) {
     previewImg.src = '/snapshot?t=' + Date.now();
   }
 }, 3000);
