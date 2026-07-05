@@ -6,7 +6,6 @@
 #include "http_server.h"
 #include "led.h"
 #include "mdns.h"
-#include "settings.h"
 #include "wifi_ap.h"
 #include <stdio.h>
 
@@ -23,8 +22,6 @@ StackType_t wifiTaskStack[WIFI_STACK_SIZE];
 SemaphoreHandle_t wifi_req_semaphore;
 static StaticSemaphore_t wifi_req_semaphore_mutex_buffer;
 
-static bool wifi_started = false;
-static bool wifi_has_ip_val = false;
 static bool wifi_ever_had_ip = false;
 static bool mdns_started = false;
 
@@ -43,12 +40,7 @@ static void start_mdns(void) {
   char suffix[5];
   printspy_wifi_get_id_suffix(suffix, sizeof(suffix));
   char hostname[32];
-  const char *custom = printspy_nvs_get_hostname();
-  if (custom) {
-    snprintf(hostname, sizeof(hostname), "%s", custom);
-  } else {
-    snprintf(hostname, sizeof(hostname), "printspy-cam-%s", suffix);
-  }
+  snprintf(hostname, sizeof(hostname), "printspy-cam-%s", suffix);
 
   esp_netif_t *sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
   if (sta_netif) {
@@ -90,7 +82,6 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     switch (event_id) {
     case IP_EVENT_STA_GOT_IP: {
       ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-      wifi_has_ip_val = true;
       wifi_ever_had_ip = true;
       ESP_LOGI(TAG, "Connected with IP Address:" IPSTR,
                IP2STR(&event->ip_info.ip));
@@ -100,9 +91,6 @@ static void event_handler(void *arg, esp_event_base_t event_base,
       printspy_http_server_start();
       break;
     }
-    case IP_EVENT_STA_LOST_IP:
-      wifi_has_ip_val = false;
-      break;
     default:
       break;
     }
@@ -127,10 +115,6 @@ static void wifi_driver_init(void) {
   wifi_req_semaphore =
       xSemaphoreCreateMutexStatic(&wifi_req_semaphore_mutex_buffer);
 }
-
-bool printspy_wifi_is_started(void) { return wifi_started; }
-
-bool printspy_wifi_has_ip(void) { return wifi_has_ip_val; }
 
 bool printspy_wifi_has_credentials(void) {
   wifi_config_t cfg = {0};
@@ -175,7 +159,6 @@ void wifi_task_run(void *pvParameters) {
   // We're a mains-powered streaming device, not a battery one - no reason
   // to trade capture reliability for power savings we don't need.
   esp_wifi_set_ps(WIFI_PS_NONE);
-  wifi_started = true;
 
   EventBits_t wifi_event_bits = 0;
   int boot_retry_count = 0;

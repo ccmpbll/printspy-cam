@@ -32,8 +32,6 @@ extern StackType_t wifiTaskStack[WIFI_STACK_SIZE];
 
 void wifi_task_run(void *pvParameters);
 
-bool printspy_wifi_is_started(void);
-bool printspy_wifi_has_ip(void);
 bool printspy_wifi_has_credentials(void);
 
 // Writes a 4-hex-char device ID (last 2 bytes of the base MAC, e.g.

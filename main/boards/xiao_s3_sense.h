@@ -24,5 +24,3 @@
 
 #define LED_GPIO_NUM 21 // onboard user LED, not a flash LED - no dedicated flash on this board
 #define LED_IS_NEOPIXEL 0
-
-#define BOARD_HAS_PSRAM 1

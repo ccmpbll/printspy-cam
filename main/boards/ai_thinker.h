@@ -24,5 +24,3 @@
 
 #define LED_GPIO_NUM 4 // shared with SD card D1 - board has no MicroSD slot exposed when used as flash LED
 #define LED_IS_NEOPIXEL 0
-
-#define BOARD_HAS_PSRAM 1

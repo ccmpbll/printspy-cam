@@ -2,7 +2,7 @@
 
 // Selects the active board's pin header based on the Kconfig board choice
 // (main/Kconfig.projbuild). Each board header defines the same set of
-// CAM_PIN_*, LED_GPIO_NUM, and PSRAM-related macros.
+// CAM_PIN_* and LED_GPIO_NUM/LED_IS_NEOPIXEL macros.
 
 #if CONFIG_BOARD_FREENOVE_S3
 #include "freenove_s3.h"

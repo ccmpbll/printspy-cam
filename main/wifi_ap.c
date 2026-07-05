@@ -5,7 +5,6 @@
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "settings.h"
 #include "wifi.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -231,14 +230,9 @@ static esp_err_t handle_connect_body(httpd_req_t *req, const char *body) {
   esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg);
 
   char hostname[32];
-  const char *custom_hostname = printspy_nvs_get_hostname();
-  if (custom_hostname) {
-    snprintf(hostname, sizeof(hostname), "%s", custom_hostname);
-  } else {
-    char id_suffix[5];
-    printspy_wifi_get_id_suffix(id_suffix, sizeof(id_suffix));
-    snprintf(hostname, sizeof(hostname), "printspy-cam-%s", id_suffix);
-  }
+  char id_suffix[5];
+  printspy_wifi_get_id_suffix(id_suffix, sizeof(id_suffix));
+  snprintf(hostname, sizeof(hostname), "printspy-cam-%s", id_suffix);
   // Heap-allocated and sized from the actual runtime string, same as
   // get_handler's page/opts below - GCC's -Wformat-truncation can't
   // reason about a fixed-size stack buffer against a runtime-length %s
@@ -349,12 +343,4 @@ void printspy_wifi_ap_start(bool is_fallback) {
       .user_ctx = NULL,
   };
   httpd_register_uri_handler(http_server, &connect_get_uri);
-}
-
-void printspy_wifi_ap_stop(void) {
-  if (http_server) {
-    httpd_stop(http_server);
-    http_server = NULL;
-  }
-  esp_wifi_set_mode(WIFI_MODE_STA);
 }

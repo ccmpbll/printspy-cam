@@ -31,5 +31,3 @@
 
 #define LED_GPIO_NUM 48 // onboard WS2812B, not a plain PWM LED - led.c must special-case this board
 #define LED_IS_NEOPIXEL 1
-
-#define BOARD_HAS_PSRAM 1

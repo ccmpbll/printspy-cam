@@ -82,15 +82,6 @@ esp_err_t printspy_led_init(void) {
 #endif
 }
 
-esp_err_t printspy_led_set_brightness(uint8_t brightness) {
-  if (brightness > 0) {
-    apply_color(brightness, brightness, brightness);
-  } else if (strip) {
-    led_strip_clear(strip);
-  }
-  return ESP_OK;
-}
-
 esp_err_t printspy_led_set_wifi_state(printspy_led_wifi_state_t state) {
   wifi_state = state;
   blink_on = false;
