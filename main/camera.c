@@ -40,7 +40,9 @@ esp_err_t printspy_camera_init(void) {
       .pin_vsync = CAM_PIN_VSYNC,
       .pin_href = CAM_PIN_HREF,
       .pin_pclk = CAM_PIN_PCLK,
-      .xclk_freq_hz = 20000000,
+      // Dropped from 20MHz: less aggressive DVP bus timing gives more
+      // margin against wifi-coincident capture corruption/timeouts.
+      .xclk_freq_hz = 10000000,
       .ledc_timer = LEDC_TIMER_0,
       .ledc_channel = LEDC_CHANNEL_0,
       .pixel_format = PIXFORMAT_JPEG,

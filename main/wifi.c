@@ -169,6 +169,12 @@ void wifi_task_run(void *pvParameters) {
   // Credentials exist: start STA and attempt to connect.
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_start());
+  // Default modem-sleep power save cycles the radio on a DTIM schedule -
+  // the wake jitter is a known cause of camera capture timeouts on boards
+  // sharing clock/bus resources between wifi and the camera peripheral.
+  // We're a mains-powered streaming device, not a battery one - no reason
+  // to trade capture reliability for power savings we don't need.
+  esp_wifi_set_ps(WIFI_PS_NONE);
   wifi_started = true;
 
   EventBits_t wifi_event_bits = 0;
