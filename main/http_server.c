@@ -449,6 +449,10 @@ esp_err_t printspy_http_server_start(void) {
 
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.stack_size = 8192; // multipart streaming needs more than the 4096 default
+  // Default max_uri_handlers is 8 - we register 9 (/, /snapshot, /stream,
+  // /api/status, /api/logs, /api/wifi, /api/settings x2, /api/ota).
+  // Past the cap, httpd_register_uri_handler silently drops the excess.
+  config.max_uri_handlers = 9;
   // Enough for stream + log workers plus a few quick synchronous requests
   // (admin page, /snapshot, /api/status) to stay responsive at the same time.
   config.max_open_sockets = STREAM_WORKER_COUNT + LOG_WORKER_COUNT + 4;
