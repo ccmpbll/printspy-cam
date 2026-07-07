@@ -30,6 +30,25 @@ void printspy_wifi_get_id_suffix(char *out, size_t out_size) {
   snprintf(out, out_size, "%02x%02x", mac[4], mac[5]);
 }
 
+// Must run before esp_wifi_start()/DHCP negotiation - the DHCP client reads
+// the netif hostname when it sends its DISCOVER/REQUEST, so setting it after
+// an IP is already acquired (as this used to, inside start_mdns() on
+// IP_EVENT_STA_GOT_IP) only affects future renewals. Routers show whatever
+// hostname was in place at the *original* lease until then, which for most
+// home routers is effectively "never" - hence "printspy-cam-<mac>" never
+// showing up in the DHCP client list.
+static void set_dhcp_hostname(void) {
+  char suffix[5];
+  printspy_wifi_get_id_suffix(suffix, sizeof(suffix));
+  char hostname[32];
+  snprintf(hostname, sizeof(hostname), "printspy-cam-%s", suffix);
+
+  esp_netif_t *sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+  if (sta_netif) {
+    esp_netif_set_hostname(sta_netif, hostname);
+  }
+}
+
 // Idempotent - IP_EVENT_STA_GOT_IP can refire on reconnect.
 static void start_mdns(void) {
   if (mdns_started) {
@@ -40,11 +59,6 @@ static void start_mdns(void) {
   printspy_wifi_get_id_suffix(suffix, sizeof(suffix));
   char hostname[32];
   snprintf(hostname, sizeof(hostname), "printspy-cam-%s", suffix);
-
-  esp_netif_t *sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
-  if (sta_netif) {
-    esp_netif_set_hostname(sta_netif, hostname);
-  }
 
   esp_err_t err = mdns_init();
   if (err != ESP_OK) {
@@ -107,6 +121,7 @@ static void wifi_driver_init(void) {
   esp_netif_create_default_wifi_ap();
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+  set_dhcp_hostname();
 
   wifi_req_semaphore =
       xSemaphoreCreateMutexStatic(&wifi_req_semaphore_mutex_buffer);
