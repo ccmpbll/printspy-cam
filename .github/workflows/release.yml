@@ -21,10 +21,14 @@ jobs:
           # build.yml for why the other two aren't here.
           - board: freenove_s3
             target: esp32s3
-            kconfig: "CONFIG_BOARD_FREENOVE_S3=y"
+            kconfig: |
+              CONFIG_BOARD_FREENOVE_S3=y
+              CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
           - board: nulllab_esp32s3_cam
             target: esp32s3
-            kconfig: "CONFIG_BOARD_NULLLAB_ESP32S3_CAM=y"
+            kconfig: |
+              CONFIG_BOARD_NULLLAB_ESP32S3_CAM=y
+              CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 
     steps:
       - name: Checkout
