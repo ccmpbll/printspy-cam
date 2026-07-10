@@ -20,6 +20,15 @@ static const char *TAG = "printspy_camera";
 #define DEFAULT_JPEG_QUALITY 12
 
 esp_err_t printspy_camera_init(void) {
+  // Bump the driver's own probe logging so a failed sensor detect shows the
+  // actual SCCB bytes read instead of just "not supported" - needs
+  // CONFIG_LOG_MAXIMUM_LEVEL_DEBUG=y too (idf.py menuconfig -> Component
+  // config -> Log output -> Maximum Log Verbosity), these calls are no-ops
+  // below whatever level was compiled in.
+  esp_log_level_set("camera", ESP_LOG_DEBUG);
+  esp_log_level_set("sccb", ESP_LOG_DEBUG);
+  esp_log_level_set("cam_hal", ESP_LOG_DEBUG);
+
   uint8_t stored_resolution = printspy_nvs_get_resolution();
   uint8_t stored_quality = printspy_nvs_get_quality();
 
