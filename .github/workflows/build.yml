@@ -29,11 +29,14 @@ jobs:
           # other two (xiao_s3_sense, esp32_s3_eye) have unverified pin
           # mappings - compiling them would only prove the code parses,
           # not that the pins are right, and nobody catches a wrong pin
-          # until real hardware shows up. Add them back here once someone
+          # until real hardware shows up. Add them here once someone
           # tests on that board.
           - board: freenove_s3
             target: esp32s3
             kconfig: "CONFIG_BOARD_FREENOVE_S3=y"
+          - board: nulllab_esp32s3_cam
+            target: esp32s3
+            kconfig: "CONFIG_BOARD_NULLLAB_ESP32S3_CAM=y"
 
     steps:
       - name: Checkout

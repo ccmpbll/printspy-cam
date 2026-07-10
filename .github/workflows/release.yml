@@ -22,6 +22,9 @@ jobs:
           - board: freenove_s3
             target: esp32s3
             kconfig: "CONFIG_BOARD_FREENOVE_S3=y"
+          - board: nulllab_esp32s3_cam
+            target: esp32s3
+            kconfig: "CONFIG_BOARD_NULLLAB_ESP32S3_CAM=y"
 
     steps:
       - name: Checkout
