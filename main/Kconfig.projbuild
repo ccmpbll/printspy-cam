@@ -16,6 +16,10 @@ menu "PrintSpy Cam Configuration"
             bool "ESP32-S3-EYE (Espressif)"
             depends on IDF_TARGET_ESP32S3
 
+        config BOARD_NULLLAB_ESP32S3_CAM
+            bool "nulllaborg ESP32-S3-CAM"
+            depends on IDF_TARGET_ESP32S3
+
     endchoice
 
 endmenu

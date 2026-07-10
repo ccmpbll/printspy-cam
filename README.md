@@ -15,6 +15,7 @@ camera-streamer source, no backend changes needed.
 | Freenove ESP32-S3 CAM | Primary target — pin mapping verified |
 | Seeed XIAO ESP32-S3 Sense | Planned — pin mapping unverified, no hardware to test against yet |
 | ESP32-S3-EYE (Espressif) | Planned — pin mapping unverified, no hardware to test against yet |
+| [nulllaborg ESP32-S3-CAM](https://github.com/nulllaborg/esp32s3-cam) | Pin mapping verified against schematic — no hardware tested yet |
 
 CI only builds Freenove, the one board with verified pins and real hardware
 to test against — the other two are selectable via `idf.py menuconfig`
