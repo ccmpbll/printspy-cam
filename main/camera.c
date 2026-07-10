@@ -1,10 +1,47 @@
 #include "camera.h"
 
 #include "boards/board.h"
+#include "driver/i2c.h"
 #include "esp_log.h"
 #include "settings.h"
 
 static const char *TAG = "printspy_camera";
+
+// Temporary: raw I2C scan on the SCCB pins, bypassing esp32-camera's own
+// driver entirely - answers "does ANYTHING ack on this bus at all" before
+// blaming sensor-ID recognition. Installs/uninstalls its own driver on the
+// same port esp32-camera will use right after, so it doesn't conflict.
+static void scan_sccb_bus(void) {
+  i2c_config_t conf = {
+      .mode = I2C_MODE_MASTER,
+      .sda_io_num = CAM_PIN_SIOD,
+      .scl_io_num = CAM_PIN_SIOC,
+      .sda_pullup_en = GPIO_PULLUP_ENABLE,
+      .scl_pullup_en = GPIO_PULLUP_ENABLE,
+      .master.clk_speed = 100000,
+  };
+  i2c_param_config(I2C_NUM_0, &conf);
+  i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+
+  ESP_LOGI(TAG, "scanning SCCB bus (sda=%d scl=%d) for any ACK...",
+           CAM_PIN_SIOD, CAM_PIN_SIOC);
+  int found = 0;
+  for (uint8_t addr = 0x03; addr < 0x78; addr++) {
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_stop(cmd);
+    esp_err_t err = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(50));
+    i2c_cmd_link_delete(cmd);
+    if (err == ESP_OK) {
+      ESP_LOGI(TAG, "  ACK at 0x%02x", addr);
+      found++;
+    }
+  }
+  ESP_LOGI(TAG, "scan done, %d device(s) acked", found);
+
+  i2c_driver_delete(I2C_NUM_0);
+}
 
 // ponytail: NVS resolution/quality default to 0 when never set. 0 happens
 // to be a valid framesize_t (FRAMESIZE_96X96), so it can't double as
@@ -28,6 +65,8 @@ esp_err_t printspy_camera_init(void) {
   esp_log_level_set("camera", ESP_LOG_DEBUG);
   esp_log_level_set("sccb", ESP_LOG_DEBUG);
   esp_log_level_set("cam_hal", ESP_LOG_DEBUG);
+
+  scan_sccb_bus();
 
   uint8_t stored_resolution = printspy_nvs_get_resolution();
   uint8_t stored_quality = printspy_nvs_get_quality();
