@@ -1,81 +1,10 @@
 #include "camera.h"
 
 #include "boards/board.h"
-#include "driver/gpio.h"
-#include "driver/i2c.h"
 #include "esp_log.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "settings.h"
 
 static const char *TAG = "printspy_camera";
-
-// Temporary: read SDA/SCL as plain GPIO inputs (internal pull-up, no I2C
-// peripheral involved at all) - distinguishes "properly idle-high, nothing
-// answering" from "something's actively holding the bus low" (stuck sensor,
-// short, wrong pin).
-static void probe_raw_gpio_levels(void) {
-  gpio_config_t io_conf = {
-      .pin_bit_mask = (1ULL << CAM_PIN_SIOD) | (1ULL << CAM_PIN_SIOC),
-      .mode = GPIO_MODE_INPUT,
-      .pull_up_en = GPIO_PULLUP_ENABLE,
-  };
-  gpio_config(&io_conf);
-  ESP_LOGI(TAG, "raw idle levels: SDA(gpio%d)=%d SCL(gpio%d)=%d "
-                "(1=high/idle as expected, 0=held low)",
-           CAM_PIN_SIOD, gpio_get_level(CAM_PIN_SIOD), CAM_PIN_SIOC,
-           gpio_get_level(CAM_PIN_SIOC));
-}
-
-// Temporary: raw I2C scan on the SCCB pins, bypassing esp32-camera's own
-// driver entirely - answers "does ANYTHING ack on this bus at all" before
-// blaming sensor-ID recognition. Installs/uninstalls its own driver each
-// call so repeated calls (at different soak delays) don't conflict.
-static int scan_sccb_bus(void) {
-  i2c_config_t conf = {
-      .mode = I2C_MODE_MASTER,
-      .sda_io_num = CAM_PIN_SIOD,
-      .scl_io_num = CAM_PIN_SIOC,
-      .sda_pullup_en = GPIO_PULLUP_ENABLE,
-      .scl_pullup_en = GPIO_PULLUP_ENABLE,
-      .master.clk_speed = 100000,
-  };
-  i2c_param_config(I2C_NUM_0, &conf);
-  i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-
-  int found = 0;
-  for (uint8_t addr = 0x03; addr < 0x78; addr++) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(50));
-    i2c_cmd_link_delete(cmd);
-    if (err == ESP_OK) {
-      ESP_LOGI(TAG, "  ACK at 0x%02x", addr);
-      found++;
-    }
-  }
-
-  i2c_driver_delete(I2C_NUM_0);
-  return found;
-}
-
-// Temporary: repeat the scan at increasing soak delays after boot - tests
-// whether the camera rail/reset just needs more time to settle before
-// anything on the bus will ACK, since CAM_RST has no GPIO wired to it at
-// all (pure R11 pull-up per schematic) and firmware can't drive it directly.
-static void scan_sccb_bus_with_soak(void) {
-  const int delays_ms[] = {0, 200, 500, 1000, 2000};
-  for (size_t i = 0; i < sizeof(delays_ms) / sizeof(delays_ms[0]); i++) {
-    if (delays_ms[i] > 0) {
-      vTaskDelay(pdMS_TO_TICKS(delays_ms[i]));
-    }
-    ESP_LOGI(TAG, "SCCB scan at +%dms since boot...", delays_ms[i]);
-    int found = scan_sccb_bus();
-    ESP_LOGI(TAG, "  -> %d device(s) acked", found);
-  }
-}
 
 // ponytail: NVS resolution/quality default to 0 when never set. 0 happens
 // to be a valid framesize_t (FRAMESIZE_96X96), so it can't double as
@@ -91,18 +20,6 @@ static void scan_sccb_bus_with_soak(void) {
 #define DEFAULT_JPEG_QUALITY 12
 
 esp_err_t printspy_camera_init(void) {
-  // Bump the driver's own probe logging so a failed sensor detect shows the
-  // actual SCCB bytes read instead of just "not supported" - needs
-  // CONFIG_LOG_MAXIMUM_LEVEL_DEBUG=y too (idf.py menuconfig -> Component
-  // config -> Log output -> Maximum Log Verbosity), these calls are no-ops
-  // below whatever level was compiled in.
-  esp_log_level_set("camera", ESP_LOG_DEBUG);
-  esp_log_level_set("sccb", ESP_LOG_DEBUG);
-  esp_log_level_set("cam_hal", ESP_LOG_DEBUG);
-
-  probe_raw_gpio_levels();
-  scan_sccb_bus_with_soak();
-
   uint8_t stored_resolution = printspy_nvs_get_resolution();
   uint8_t stored_quality = printspy_nvs_get_quality();
 
