@@ -1,6 +1,7 @@
 #include "camera.h"
 
 #include "boards/board.h"
+#include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -8,6 +9,23 @@
 #include "settings.h"
 
 static const char *TAG = "printspy_camera";
+
+// Temporary: read SDA/SCL as plain GPIO inputs (internal pull-up, no I2C
+// peripheral involved at all) - distinguishes "properly idle-high, nothing
+// answering" from "something's actively holding the bus low" (stuck sensor,
+// short, wrong pin).
+static void probe_raw_gpio_levels(void) {
+  gpio_config_t io_conf = {
+      .pin_bit_mask = (1ULL << CAM_PIN_SIOD) | (1ULL << CAM_PIN_SIOC),
+      .mode = GPIO_MODE_INPUT,
+      .pull_up_en = GPIO_PULLUP_ENABLE,
+  };
+  gpio_config(&io_conf);
+  ESP_LOGI(TAG, "raw idle levels: SDA(gpio%d)=%d SCL(gpio%d)=%d "
+                "(1=high/idle as expected, 0=held low)",
+           CAM_PIN_SIOD, gpio_get_level(CAM_PIN_SIOD), CAM_PIN_SIOC,
+           gpio_get_level(CAM_PIN_SIOC));
+}
 
 // Temporary: raw I2C scan on the SCCB pins, bypassing esp32-camera's own
 // driver entirely - answers "does ANYTHING ack on this bus at all" before
@@ -82,6 +100,7 @@ esp_err_t printspy_camera_init(void) {
   esp_log_level_set("sccb", ESP_LOG_DEBUG);
   esp_log_level_set("cam_hal", ESP_LOG_DEBUG);
 
+  probe_raw_gpio_levels();
   scan_sccb_bus_with_soak();
 
   uint8_t stored_resolution = printspy_nvs_get_resolution();
