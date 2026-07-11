@@ -11,6 +11,7 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "led.h"
 #include "log.h"
 #include "ota.h"
 #include "settings.h"
@@ -318,6 +319,7 @@ static esp_err_t settings_get_handler(httpd_req_t *req) {
   cJSON_AddNumberToObject(root, "brightness", printspy_nvs_get_cam_brightness());
   cJSON_AddNumberToObject(root, "contrast", printspy_nvs_get_cam_contrast());
   cJSON_AddNumberToObject(root, "saturation", printspy_nvs_get_cam_saturation());
+  cJSON_AddNumberToObject(root, "led_brightness", printspy_led_get_brightness());
 
   // Live values from the sensor, not raw NVS - NVS reads back 0 ("unset")
   // until the user actually changes these once, but the sensor always
@@ -386,6 +388,11 @@ static esp_err_t settings_post_handler(httpd_req_t *req) {
     int8_t val = (int8_t)item->valueint;
     printspy_nvs_set_cam_saturation(val);
     if (sensor) sensor->set_saturation(sensor, val);
+  }
+
+  item = cJSON_GetObjectItem(json, "led_brightness");
+  if (cJSON_IsNumber(item) && item->valueint >= 0 && item->valueint <= 100) {
+    printspy_led_set_brightness((uint8_t)item->valueint);
   }
 
   // FRAMESIZE_96X96 (0) .. FRAMESIZE_UXGA (13) - the full range esp32-camera

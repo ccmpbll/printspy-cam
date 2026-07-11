@@ -8,6 +8,7 @@ idf_component_register(
     "settings.c"
     "ota.c"
     "log.c"
+    "led.c"
   INCLUDE_DIRS
     "."
   EMBED_TXTFILES

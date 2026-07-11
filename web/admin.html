@@ -73,6 +73,8 @@ white-space:pre-wrap;word-break:break-all;border:1px solid var(--border);}
   <input type="range" id="contrast" min="-2" max="2" step="1">
   <label for="saturation">Saturation (<span id="saturation-val">0</span>)</label>
   <input type="range" id="saturation" min="-2" max="2" step="1">
+  <label for="led_brightness">Flash LED brightness (<span id="led_brightness-val">0</span>%, no-op if this board has no flash LED)</label>
+  <input type="range" id="led_brightness" min="0" max="100" step="5">
   <button id="save-camera">Save</button>
 </div>
 
@@ -131,10 +133,12 @@ function refreshCameraSettings() {
     document.getElementById('resolution').value = s.resolution;
     document.getElementById('quality').value = s.quality;
     document.getElementById('quality-val').textContent = s.quality;
+    document.getElementById('led_brightness').value = s.led_brightness;
+    document.getElementById('led_brightness-val').textContent = s.led_brightness;
   }).catch(() => {});
 }
 
-['brightness', 'contrast', 'saturation', 'quality'].forEach(id => {
+['brightness', 'contrast', 'saturation', 'quality', 'led_brightness'].forEach(id => {
   document.getElementById(id).addEventListener('input', e => {
     document.getElementById(id + '-val').textContent = e.target.value;
   });
@@ -149,6 +153,7 @@ document.getElementById('save-camera').addEventListener('click', () => {
     saturation: parseInt(document.getElementById('saturation').value, 10),
     resolution: parseInt(document.getElementById('resolution').value, 10),
     quality: parseInt(document.getElementById('quality').value, 10),
+    led_brightness: parseInt(document.getElementById('led_brightness').value, 10),
   };
   fetch('/api/settings', {method: 'POST', body: JSON.stringify(body)})
     .then(() => showMsg('Camera settings saved.'))

@@ -28,3 +28,11 @@
 #define CAM_PIN_VSYNC 6
 #define CAM_PIN_HREF 7
 #define CAM_PIN_PCLK 13
+
+// Onboard white flash LEDs (pair, driven together through Q1/Q2 per
+// schematic). Left unconfigured, this pin floats - explains why two
+// otherwise-identical boards showed different idle LED brightness
+// out of the box. led.c drives it via LEDC PWM and sets it to the
+// persisted (default off) brightness at boot instead of leaving it
+// floating.
+#define CAM_FLASH_LED_PIN 3
