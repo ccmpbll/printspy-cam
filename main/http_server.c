@@ -2,6 +2,7 @@
 
 #include "camera.h"
 #include "cJSON.h"
+#include "chip_temp.h"
 #include "esp_camera.h"
 #include "esp_log.h"
 #include "esp_netif.h"
@@ -210,6 +211,7 @@ static esp_err_t status_handler(httpd_req_t *req) {
   cJSON *root = cJSON_CreateObject();
   cJSON_AddStringToObject(root, "version", PRINTSPY_CAM_VERSION);
   cJSON_AddNumberToObject(root, "uptime_seconds", esp_timer_get_time() / 1000000);
+  cJSON_AddNumberToObject(root, "chip_temp_c", printspy_chip_temp_read());
 
   esp_netif_t *sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
   esp_netif_ip_info_t ip_info;

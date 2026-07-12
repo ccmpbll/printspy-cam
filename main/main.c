@@ -1,5 +1,6 @@
 #include "camera.h"
 #include "boards/board.h"
+#include "chip_temp.h"
 #include "esp_log.h"
 #include "log.h"
 #include "nvs_flash.h"
@@ -26,6 +27,7 @@ void app_main(void) {
   }
   ESP_ERROR_CHECK(err);
   ESP_ERROR_CHECK(printspy_nvs_init());
+  ESP_ERROR_CHECK(printspy_chip_temp_init());
 
 #ifdef CAM_FLASH_LED_PIN
   // These flash LEDs are too dim to be useful even at full drive (2K

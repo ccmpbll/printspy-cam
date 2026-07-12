@@ -113,7 +113,8 @@ function showMsg(text) {
 function refreshStatus() {
   fetch('/api/status').then(r => r.json()).then(s => {
     document.getElementById('status-sub').textContent =
-      `${s.ip || '?'} - ${s.wifi_ssid || '?'} - up ${Math.floor(s.uptime_seconds / 60)}m`;
+      `${s.ip || '?'} - ${s.wifi_ssid || '?'} - up ${Math.floor(s.uptime_seconds / 60)}m` +
+      (s.chip_temp_c ? ` - ${s.chip_temp_c.toFixed(1)}°C` : '');
     document.getElementById('version-line').textContent = `Version ${s.version}`;
   }).catch(() => {});
 }
