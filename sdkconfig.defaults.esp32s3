@@ -1,11 +1,10 @@
 # Flash size isn't uniform across esp32s3 boards (Freenove: 16MB, nulllab
 # ESP32-S3-CAM: 8MB per its ZB25VQ64 flash chip - real hardware boot-looped
 # with "Detected size(8192k) smaller than the size in the binary image
-# header(16384k)" until this was moved per-board). Each board's CI matrix
-# entry sets CONFIG_ESPTOOLPY_FLASHSIZE_* itself (see build.yml/release.yml).
-# Building locally: add the right CONFIG_ESPTOOLPY_FLASHSIZE_*MB=y line to
-# your own sdkconfig.defaults (or set it via `idf.py menuconfig` -> Serial
-# flasher config) before building for your board.
+# header(16384k)" until this was moved per-board). Board-specific settings
+# (board select, flash size, and anything else that genuinely differs)
+# live in board-configs/<board>.sdkconfig - see Makefile/CI workflows for
+# how those get layered on top of this file via SDKCONFIG_DEFAULTS.
 #
 # partitions-8m.csv lays out 6MB of whatever's actually on the chip - fine
 # on both 8MB and 16MB boards, just leaves the top half unused on Freenove.

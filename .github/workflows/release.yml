@@ -21,14 +21,8 @@ jobs:
           # build.yml for why the other two aren't here.
           - board: freenove_s3
             target: esp32s3
-            kconfig: |
-              CONFIG_BOARD_FREENOVE_S3=y
-              CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
           - board: nulllab_esp32s3_cam
             target: esp32s3
-            kconfig: |
-              CONFIG_BOARD_NULLLAB_ESP32S3_CAM=y
-              CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 
     steps:
       - name: Checkout
@@ -48,14 +42,12 @@ jobs:
           sed -i 's/#define PRINTSPY_CAM_VERSION ".*"/#define PRINTSPY_CAM_VERSION "${{ steps.version.outputs.VERSION }}"/' \
             main/version.h
 
-      - name: Select board
-        run: echo "${{ matrix.kconfig }}" >> sdkconfig.defaults
-
       - name: Build firmware
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: v5.3.4
           target: ${{ matrix.target }}
+          command: idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp32s3;board-configs/${{ matrix.board }}.sdkconfig" build
 
       - name: Prepare release binaries
         run: |

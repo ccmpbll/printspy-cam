@@ -1,0 +1,12 @@
+CONFIG_BOARD_NULLLAB_ESP32S3_CAM=y
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+
+# ESP32-S3R8 (this board's chip, confirmed via schematic) is only rated
+# -40~65C ambient per Espressif's datasheet (Table 1-1: ESP32-S3 Series
+# Comparison), tighter than plain ESP32-S3's -40~105C, because of its
+# embedded PSRAM. Enabling ECC restores the full 85C ambient rating
+# (costs 1/16 of PSRAM - 512KB of 8MB - for error correction on every
+# access). Real per-board config, not the shared esp32s3 file: Freenove's
+# WROOM-1 module uses external PSRAM + a plain ESP32-S3 die already rated
+# to 105C, so it would get the 512KB cost with zero benefit.
+CONFIG_SPIRAM_ECC_ENABLE=y
