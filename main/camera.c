@@ -1,11 +1,8 @@
 #include "camera.h"
 
 #include "boards/board.h"
-#include "esp_heap_caps.h"
 #include "esp_log.h"
-#include "img_converters.h"
 #include "settings.h"
-#include <stdlib.h>
 
 static const char *TAG = "printspy_camera";
 
@@ -23,14 +20,6 @@ static const char *TAG = "printspy_camera";
 #define DEFAULT_JPEG_QUALITY 12
 
 esp_err_t printspy_camera_init(void) {
-  // jpg2rgb565() (used by rotate_frame() below) decodes into little-endian
-  // RGB565, but fmt2jpg()'s encoder defaults to assuming big-endian input
-  // (rgb565_big_endian=true in to_jpg.cpp) - global setting, set once here
-  // rather than per-call. Left mismatched, every rotated frame comes out
-  // with scrambled colors (channels reading the wrong byte) despite the
-  // rotation geometry itself being correct - confirmed on real hardware.
-  jpgSetRgb565BE(false);
-
   uint8_t stored_resolution = printspy_nvs_get_resolution();
   uint8_t stored_quality = printspy_nvs_get_quality();
 
@@ -88,96 +77,10 @@ esp_err_t printspy_camera_init(void) {
   return ESP_OK;
 }
 
-// Neither OV2640 nor OV3660 can rotate on readout - only mirror/flip in
-// hardware (see set_hmirror/set_vflip above, which cover 180 for free).
-// True 90/270 needs the frame decoded, transposed, and re-encoded as
-// JPEG - real CPU cost per frame and a second full-frame PSRAM buffer on
-// top of the decoded one (worst case ~7.7MB combined at UXGA on an 8MB
-// PSRAM chip, hence the OOM fallback below rather than a hard failure).
-static bool rotate_frame(camera_fb_t *fb, uint16_t degrees, uint8_t quality,
-                          uint8_t **out_buf, size_t *out_len) {
-  size_t rgb_len = (size_t)fb->width * fb->height * 2; // RGB565
-  uint16_t *src = heap_caps_malloc(rgb_len, MALLOC_CAP_SPIRAM);
-  if (!src) {
-    ESP_LOGW(TAG, "rotate: no PSRAM for %zu-byte decode buffer", rgb_len);
-    return false;
-  }
-  if (!jpg2rgb565(fb->buf, fb->len, (uint8_t *)src, JPG_SCALE_NONE)) {
-    ESP_LOGW(TAG, "rotate: JPEG decode failed");
-    free(src);
-    return false;
-  }
-
-  uint16_t *dst = heap_caps_malloc(rgb_len, MALLOC_CAP_SPIRAM);
-  if (!dst) {
-    ESP_LOGW(TAG, "rotate: no PSRAM for %zu-byte rotate buffer", rgb_len);
-    free(src);
-    return false;
-  }
-
-  uint16_t src_w = fb->width, src_h = fb->height;
-  uint16_t dst_w = src_h, dst_h = src_w;
-  for (uint16_t y = 0; y < src_h; y++) {
-    for (uint16_t x = 0; x < src_w; x++) {
-      uint16_t dst_x, dst_y;
-      if (degrees == 90) {
-        dst_x = src_h - 1 - y;
-        dst_y = x;
-      } else { // 270
-        dst_x = y;
-        dst_y = src_w - 1 - x;
-      }
-      dst[(size_t)dst_y * dst_w + dst_x] = src[(size_t)y * src_w + x];
-    }
-  }
-  free(src);
-
-  bool ok = fmt2jpg((uint8_t *)dst, rgb_len, dst_w, dst_h, PIXFORMAT_RGB565,
-                     quality, out_buf, out_len);
-  free(dst);
-  if (!ok) {
-    ESP_LOGW(TAG, "rotate: re-encode failed");
-  }
-  return ok;
-}
-
-printspy_frame_t printspy_camera_capture(void) {
-  printspy_frame_t frame = {0};
+camera_fb_t *printspy_camera_capture(void) {
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb) {
     ESP_LOGW(TAG, "esp_camera_fb_get returned NULL");
-    return frame;
   }
-
-  uint16_t rotation = printspy_nvs_get_rotation();
-  if (rotation == 90 || rotation == 270) {
-    sensor_t *sensor = esp_camera_sensor_get();
-    uint8_t quality = sensor ? sensor->status.quality : DEFAULT_JPEG_QUALITY;
-    uint8_t *rotated_buf;
-    size_t rotated_len;
-    if (rotate_frame(fb, rotation, quality, &rotated_buf, &rotated_len)) {
-      esp_camera_fb_return(fb);
-      frame.buf = rotated_buf;
-      frame.len = rotated_len;
-      frame.fb = NULL;
-      return frame;
-    }
-    // Decode/encode/OOM failure - fall through and serve the original,
-    // unrotated frame rather than dropping it entirely.
-  }
-
-  frame.buf = fb->buf;
-  frame.len = fb->len;
-  frame.fb = fb;
-  return frame;
-}
-
-void printspy_camera_release_frame(printspy_frame_t *frame) {
-  if (frame->fb) {
-    esp_camera_fb_return(frame->fb);
-  } else if (frame->buf) {
-    free((void *)frame->buf);
-  }
-  frame->buf = NULL;
-  frame->fb = NULL;
+  return fb;
 }

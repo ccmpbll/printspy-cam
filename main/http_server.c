@@ -117,14 +117,14 @@ static esp_err_t root_handler(httpd_req_t *req) {
 }
 
 static esp_err_t snapshot_handler(httpd_req_t *req) {
-  printspy_frame_t frame = printspy_camera_capture();
-  if (!frame.buf) {
+  camera_fb_t *fb = printspy_camera_capture();
+  if (!fb) {
     httpd_resp_send_500(req);
     return ESP_FAIL;
   }
   httpd_resp_set_type(req, "image/jpeg");
-  esp_err_t res = httpd_resp_send(req, (const char *)frame.buf, frame.len);
-  printspy_camera_release_frame(&frame);
+  esp_err_t res = httpd_resp_send(req, (const char *)fb->buf, fb->len);
+  esp_camera_fb_return(fb);
   return res;
 }
 
@@ -139,24 +139,24 @@ static esp_err_t stream_async_handler(httpd_req_t *req) {
   httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
 
   while (true) {
-    printspy_frame_t frame = printspy_camera_capture();
-    if (!frame.buf) {
+    camera_fb_t *fb = printspy_camera_capture();
+    if (!fb) {
       res = ESP_FAIL;
       break;
     }
 
     char part_buf[64];
-    size_t hlen = snprintf(part_buf, sizeof(part_buf), STREAM_PART, frame.len);
+    size_t hlen = snprintf(part_buf, sizeof(part_buf), STREAM_PART, fb->len);
 
     res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
     if (res == ESP_OK) {
       res = httpd_resp_send_chunk(req, part_buf, hlen);
     }
     if (res == ESP_OK) {
-      res = httpd_resp_send_chunk(req, (const char *)frame.buf, frame.len);
+      res = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
     }
 
-    printspy_camera_release_frame(&frame);
+    esp_camera_fb_return(fb);
     if (res != ESP_OK) {
       break;
     }
@@ -318,7 +318,6 @@ static esp_err_t settings_get_handler(httpd_req_t *req) {
   cJSON_AddNumberToObject(root, "brightness", printspy_nvs_get_cam_brightness());
   cJSON_AddNumberToObject(root, "contrast", printspy_nvs_get_cam_contrast());
   cJSON_AddNumberToObject(root, "saturation", printspy_nvs_get_cam_saturation());
-  cJSON_AddNumberToObject(root, "rotation", printspy_nvs_get_rotation());
 
   // Live values from the sensor, not raw NVS - NVS reads back 0 ("unset")
   // until the user actually changes these once, but the sensor always
@@ -387,12 +386,6 @@ static esp_err_t settings_post_handler(httpd_req_t *req) {
     int8_t val = (int8_t)item->valueint;
     printspy_nvs_set_cam_saturation(val);
     if (sensor) sensor->set_saturation(sensor, val);
-  }
-
-  item = cJSON_GetObjectItem(json, "rotation");
-  if (cJSON_IsNumber(item) && (item->valueint == 0 || item->valueint == 90 ||
-                               item->valueint == 270)) {
-    printspy_nvs_set_rotation((uint16_t)item->valueint);
   }
 
   // FRAMESIZE_96X96 (0) .. FRAMESIZE_UXGA (13) - the full range esp32-camera

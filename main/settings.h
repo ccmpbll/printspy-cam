@@ -29,8 +29,3 @@ esp_err_t printspy_nvs_set_cam_contrast(int8_t level);
 
 int8_t printspy_nvs_get_cam_saturation(void);
 esp_err_t printspy_nvs_set_cam_saturation(int8_t level);
-
-// 0, 90, or 270 degrees - true rotation via software (see camera.c),
-// separate from hmirror/vflip. 180 stays free via those two instead.
-uint16_t printspy_nvs_get_rotation(void);
-esp_err_t printspy_nvs_set_rotation(uint16_t degrees);
