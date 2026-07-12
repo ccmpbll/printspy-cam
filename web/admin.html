@@ -67,14 +67,18 @@ white-space:pre-wrap;word-break:break-all;border:1px solid var(--border);}
   <input type="range" id="quality" min="4" max="40" step="1">
   <div class="row"><span>Flip horizontally</span><input type="checkbox" id="hmirror"></div>
   <div class="row"><span>Flip vertically</span><input type="checkbox" id="vflip"></div>
+  <label for="rotation">Rotation (for 180&deg;, use both flips above instead)</label>
+  <select id="rotation">
+    <option value="0">0&deg;</option>
+    <option value="90">90&deg;</option>
+    <option value="270">270&deg;</option>
+  </select>
   <label for="brightness">Brightness (<span id="brightness-val">0</span>)</label>
   <input type="range" id="brightness" min="-2" max="2" step="1">
   <label for="contrast">Contrast (<span id="contrast-val">0</span>)</label>
   <input type="range" id="contrast" min="-2" max="2" step="1">
   <label for="saturation">Saturation (<span id="saturation-val">0</span>)</label>
   <input type="range" id="saturation" min="-2" max="2" step="1">
-  <label for="led_brightness">Flash LED brightness (<span id="led_brightness-val">0</span>%, no-op if this board has no flash LED)</label>
-  <input type="range" id="led_brightness" min="0" max="100" step="5">
   <button id="save-camera">Save</button>
 </div>
 
@@ -133,12 +137,11 @@ function refreshCameraSettings() {
     document.getElementById('resolution').value = s.resolution;
     document.getElementById('quality').value = s.quality;
     document.getElementById('quality-val').textContent = s.quality;
-    document.getElementById('led_brightness').value = s.led_brightness;
-    document.getElementById('led_brightness-val').textContent = s.led_brightness;
+    document.getElementById('rotation').value = s.rotation;
   }).catch(() => {});
 }
 
-['brightness', 'contrast', 'saturation', 'quality', 'led_brightness'].forEach(id => {
+['brightness', 'contrast', 'saturation', 'quality'].forEach(id => {
   document.getElementById(id).addEventListener('input', e => {
     document.getElementById(id + '-val').textContent = e.target.value;
   });
@@ -153,7 +156,7 @@ document.getElementById('save-camera').addEventListener('click', () => {
     saturation: parseInt(document.getElementById('saturation').value, 10),
     resolution: parseInt(document.getElementById('resolution').value, 10),
     quality: parseInt(document.getElementById('quality').value, 10),
-    led_brightness: parseInt(document.getElementById('led_brightness').value, 10),
+    rotation: parseInt(document.getElementById('rotation').value, 10),
   };
   fetch('/api/settings', {method: 'POST', body: JSON.stringify(body)})
     .then(() => showMsg('Camera settings saved.'))

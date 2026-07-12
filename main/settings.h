@@ -30,8 +30,7 @@ esp_err_t printspy_nvs_set_cam_contrast(int8_t level);
 int8_t printspy_nvs_get_cam_saturation(void);
 esp_err_t printspy_nvs_set_cam_saturation(int8_t level);
 
-// Onboard flash LED brightness, 0-100 (0 = off). No-op on boards without
-// one (see led.c) but persisted regardless so it's consistent if you
-// switch boards.
-uint8_t printspy_nvs_get_led_brightness(void);
-esp_err_t printspy_nvs_set_led_brightness(uint8_t percent);
+// 0, 90, or 270 degrees - true rotation via software (see camera.c),
+// separate from hmirror/vflip. 180 stays free via those two instead.
+uint16_t printspy_nvs_get_rotation(void);
+esp_err_t printspy_nvs_set_rotation(uint16_t degrees);

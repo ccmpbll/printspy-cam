@@ -10,7 +10,7 @@ static const char *NVS_ID_VFLIP = "vflip";
 static const char *NVS_ID_CAM_BRIGHTNESS = "cam_bright";
 static const char *NVS_ID_CAM_CONTRAST = "cam_contrast";
 static const char *NVS_ID_CAM_SATURATION = "cam_sat";
-static const char *NVS_ID_LED_BRIGHTNESS = "led_bright";
+static const char *NVS_ID_ROTATION = "rotation";
 
 static uint8_t resolution_val = 0;
 static uint8_t quality_val = 0;
@@ -19,7 +19,7 @@ static uint8_t vflip_val = 0;
 static int8_t cam_brightness_val = 0;
 static int8_t cam_contrast_val = 0;
 static int8_t cam_saturation_val = 0;
-static uint8_t led_brightness_val = 0;
+static uint16_t rotation_val = 0;
 
 #define LOAD_NVS_SCALAR(nvs_get_fn, key, dest)                              \
   do {                                                                       \
@@ -56,7 +56,7 @@ esp_err_t printspy_nvs_init(void) {
   LOAD_NVS_SCALAR(nvs_get_i8, NVS_ID_CAM_BRIGHTNESS, cam_brightness_val);
   LOAD_NVS_SCALAR(nvs_get_i8, NVS_ID_CAM_CONTRAST, cam_contrast_val);
   LOAD_NVS_SCALAR(nvs_get_i8, NVS_ID_CAM_SATURATION, cam_saturation_val);
-  LOAD_NVS_SCALAR(nvs_get_u8, NVS_ID_LED_BRIGHTNESS, led_brightness_val);
+  LOAD_NVS_SCALAR(nvs_get_u16, NVS_ID_ROTATION, rotation_val);
 
   nvs_close(handle);
 
@@ -100,7 +100,11 @@ esp_err_t printspy_nvs_set_cam_saturation(int8_t level) {
   SCALAR_SETTER(nvs_set_i8, NVS_ID_CAM_SATURATION, cam_saturation_val, level)
 }
 
-uint8_t printspy_nvs_get_led_brightness(void) { return led_brightness_val; }
-esp_err_t printspy_nvs_set_led_brightness(uint8_t percent) {
-  SCALAR_SETTER(nvs_set_u8, NVS_ID_LED_BRIGHTNESS, led_brightness_val, percent)
+// 0, 90, or 270 - software rotation is the only way to get a true 90/270
+// out of these sensors (no hardware support for it), applied in
+// camera.c on top of whatever esp32-camera capture normally returns.
+// 180 stays free via hmirror+vflip above, not routed through this.
+uint16_t printspy_nvs_get_rotation(void) { return rotation_val; }
+esp_err_t printspy_nvs_set_rotation(uint16_t degrees) {
+  SCALAR_SETTER(nvs_set_u16, NVS_ID_ROTATION, rotation_val, degrees)
 }

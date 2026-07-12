@@ -11,7 +11,6 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-#include "led.h"
 #include "log.h"
 #include "ota.h"
 #include "settings.h"
@@ -118,14 +117,14 @@ static esp_err_t root_handler(httpd_req_t *req) {
 }
 
 static esp_err_t snapshot_handler(httpd_req_t *req) {
-  camera_fb_t *fb = printspy_camera_capture();
-  if (!fb) {
+  printspy_frame_t frame = printspy_camera_capture();
+  if (!frame.buf) {
     httpd_resp_send_500(req);
     return ESP_FAIL;
   }
   httpd_resp_set_type(req, "image/jpeg");
-  esp_err_t res = httpd_resp_send(req, (const char *)fb->buf, fb->len);
-  esp_camera_fb_return(fb);
+  esp_err_t res = httpd_resp_send(req, (const char *)frame.buf, frame.len);
+  printspy_camera_release_frame(&frame);
   return res;
 }
 
@@ -140,24 +139,24 @@ static esp_err_t stream_async_handler(httpd_req_t *req) {
   httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
 
   while (true) {
-    camera_fb_t *fb = printspy_camera_capture();
-    if (!fb) {
+    printspy_frame_t frame = printspy_camera_capture();
+    if (!frame.buf) {
       res = ESP_FAIL;
       break;
     }
 
     char part_buf[64];
-    size_t hlen = snprintf(part_buf, sizeof(part_buf), STREAM_PART, fb->len);
+    size_t hlen = snprintf(part_buf, sizeof(part_buf), STREAM_PART, frame.len);
 
     res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
     if (res == ESP_OK) {
       res = httpd_resp_send_chunk(req, part_buf, hlen);
     }
     if (res == ESP_OK) {
-      res = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
+      res = httpd_resp_send_chunk(req, (const char *)frame.buf, frame.len);
     }
 
-    esp_camera_fb_return(fb);
+    printspy_camera_release_frame(&frame);
     if (res != ESP_OK) {
       break;
     }
@@ -319,7 +318,7 @@ static esp_err_t settings_get_handler(httpd_req_t *req) {
   cJSON_AddNumberToObject(root, "brightness", printspy_nvs_get_cam_brightness());
   cJSON_AddNumberToObject(root, "contrast", printspy_nvs_get_cam_contrast());
   cJSON_AddNumberToObject(root, "saturation", printspy_nvs_get_cam_saturation());
-  cJSON_AddNumberToObject(root, "led_brightness", printspy_led_get_brightness());
+  cJSON_AddNumberToObject(root, "rotation", printspy_nvs_get_rotation());
 
   // Live values from the sensor, not raw NVS - NVS reads back 0 ("unset")
   // until the user actually changes these once, but the sensor always
@@ -390,9 +389,10 @@ static esp_err_t settings_post_handler(httpd_req_t *req) {
     if (sensor) sensor->set_saturation(sensor, val);
   }
 
-  item = cJSON_GetObjectItem(json, "led_brightness");
-  if (cJSON_IsNumber(item) && item->valueint >= 0 && item->valueint <= 100) {
-    printspy_led_set_brightness((uint8_t)item->valueint);
+  item = cJSON_GetObjectItem(json, "rotation");
+  if (cJSON_IsNumber(item) && (item->valueint == 0 || item->valueint == 90 ||
+                               item->valueint == 270)) {
+    printspy_nvs_set_rotation((uint16_t)item->valueint);
   }
 
   // FRAMESIZE_96X96 (0) .. FRAMESIZE_UXGA (13) - the full range esp32-camera

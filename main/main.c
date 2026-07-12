@@ -1,11 +1,15 @@
 #include "camera.h"
+#include "boards/board.h"
 #include "esp_log.h"
-#include "led.h"
 #include "log.h"
 #include "nvs_flash.h"
 #include "settings.h"
 #include "version.h"
 #include "wifi.h"
+
+#ifdef CAM_FLASH_LED_PIN
+#include "driver/gpio.h"
+#endif
 
 static const char *TAG = "printspy_cam";
 
@@ -22,7 +26,16 @@ void app_main(void) {
   }
   ESP_ERROR_CHECK(err);
   ESP_ERROR_CHECK(printspy_nvs_init());
-  ESP_ERROR_CHECK(printspy_led_init());
+
+#ifdef CAM_FLASH_LED_PIN
+  // These flash LEDs are too dim to be useful even at full drive (2K
+  // resistor + 3.3V rail leaves almost no headroom for a white LED's
+  // forward voltage) - forced hard off here rather than left floating
+  // (which is what caused two otherwise-identical boards to idle at
+  // different brightness in the first place) or exposed as a control.
+  gpio_set_direction(CAM_FLASH_LED_PIN, GPIO_MODE_OUTPUT);
+  gpio_set_level(CAM_FLASH_LED_PIN, 0);
+#endif
 
   ESP_ERROR_CHECK(printspy_camera_init());
 
