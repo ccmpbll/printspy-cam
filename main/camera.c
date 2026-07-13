@@ -42,6 +42,11 @@ esp_err_t printspy_camera_init(void) {
       .pin_pclk = CAM_PIN_PCLK,
       // Dropped from 20MHz: less aggressive DVP bus timing gives more
       // margin against wifi-coincident capture corruption/timeouts.
+      // Tried 8MHz/5MHz too (chasing the horizontal-line artifacts before
+      // the real cause - the camera ribbon crossing the WiFi antenna -
+      // was found): no clean trend, differences were within normal
+      // frame-to-frame noise. Not worth deviating from this
+      // field-tested value on that data.
       .xclk_freq_hz = 10000000,
       .ledc_timer = LEDC_TIMER_0,
       .ledc_channel = LEDC_CHANNEL_0,
