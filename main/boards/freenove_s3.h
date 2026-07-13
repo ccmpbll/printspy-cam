@@ -28,3 +28,9 @@
 #define CAM_PIN_VSYNC 6
 #define CAM_PIN_HREF 7
 #define CAM_PIN_PCLK 13
+
+// Field-tested on this board specifically (see camera.c history) -
+// dropped from 20MHz for more DVP bus timing margin against
+// wifi-coincident capture corruption/timeouts. Not re-swept - no reason
+// to believe it's wrong, this is the board it was originally tuned on.
+#define CAM_XCLK_FREQ_HZ 10000000

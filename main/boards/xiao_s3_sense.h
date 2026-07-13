@@ -21,3 +21,7 @@
 #define CAM_PIN_VSYNC 38
 #define CAM_PIN_HREF 47
 #define CAM_PIN_PCLK 13
+
+// Untested board - inherits the freenove-proven value until someone
+// characterizes this board specifically.
+#define CAM_XCLK_FREQ_HZ 10000000

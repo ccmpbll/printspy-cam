@@ -390,11 +390,11 @@ static esp_err_t settings_post_handler(httpd_req_t *req) {
     if (sensor) sensor->set_saturation(sensor, val);
   }
 
-  // FRAMESIZE_96X96 (0) .. FRAMESIZE_UXGA (13) - the full range esp32-camera
+  // FRAMESIZE_96X96 (0) .. FRAMESIZE_UXGA (15) - the full range esp32-camera
   // defines for OV3660/OV2640. Anything outside that can't be a real
   // framesize_t the sensor supports.
   item = cJSON_GetObjectItem(json, "resolution");
-  if (cJSON_IsNumber(item) && item->valueint >= 0 && item->valueint <= 13) {
+  if (cJSON_IsNumber(item) && item->valueint >= 0 && item->valueint <= 15) {
     uint8_t val = (uint8_t)item->valueint;
     printspy_nvs_set_resolution(val);
     if (sensor) sensor->set_framesize(sensor, (framesize_t)val);

@@ -29,6 +29,14 @@
 #define CAM_PIN_HREF 7
 #define CAM_PIN_PCLK 13
 
+// 24->6MHz sweep on real hardware (8-snapshot batches, horizontal-line
+// resid_std scoring) showed 14MHz scoring best/flat with 24-13MHz, cliff
+// starting at 10MHz down to the OV2640's 6MHz datasheet floor. Tried
+// 14MHz on the real board anyway - visually worse than 10MHz in practice,
+// so the resid_std metric doesn't capture whatever's actually different.
+// Back to the original field-tested 10MHz.
+#define CAM_XCLK_FREQ_HZ 10000000
+
 // Onboard white flash LEDs (pair, driven together through Q1/Q2 per
 // schematic). Left unconfigured, this pin floats - explains why two
 // otherwise-identical boards showed different idle LED brightness
