@@ -27,13 +27,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Only boards we actually have hardware to test against. The
-          # other two (xiao_s3_sense, esp32_s3_eye) have unverified pin
-          # mappings - compiling them would only prove the code parses,
-          # not that the pins are right, and nobody catches a wrong pin
-          # until real hardware shows up. Add them here once someone
-          # tests on that board (a board-configs/<board>.sdkconfig needs
-          # to exist for it first).
+          # Only boards we actually have hardware to test against.
+          # esp32_s3_eye has unverified pin mappings - compiling it would
+          # only prove the code parses, not that the pins are right, and
+          # nobody catches a wrong pin until real hardware shows up. Add
+          # it here once someone tests on that board (a
+          # board-configs/<board>.sdkconfig needs to exist for it first).
           - board: freenove_s3
             target: esp32s3
           - board: nulllab_esp32s3_cam

@@ -6,30 +6,29 @@ stream over HTTP. [PrintSpy](https://github.com/ccmpbll/printspy) points at
 it directly as a standalone webcam URL — same as any mjpg-streamer or
 camera-streamer source, no backend changes needed.
 
-> Status: early scaffolding, not yet functional.
-
 ## Board support
 
 | Board | Status |
 |---|---|
-| Freenove ESP32-S3 CAM | Primary target — pin mapping verified |
-| [nulllaborg ESP32-S3-CAM](https://github.com/nulllaborg/esp32s3-cam) | Pin mapping verified against schematic — no hardware tested yet |
+| Freenove ESP32-S3 CAM | Verified on hardware, built + released in CI |
+| [nulllaborg ESP32-S3-CAM](https://github.com/nulllaborg/esp32s3-cam) | Verified on hardware, built + released in CI |
+| Espressif ESP32-S3-EYE | Pin mapping unverified, no hardware tested — not built in CI |
 
-Both boards build in CI and are selectable via `idf.py menuconfig` under
-"PrintSpy Cam Configuration".
+Each supported board has its own config at `board-configs/<board>.sdkconfig`
+(pin selection, flash size, any board-specific Kconfig). Adding a new board
+needs a pin header in `main/boards/` plus a matching `board-configs/*.sdkconfig`.
 
 ## Building
 
 Requires [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html) >= 5.3.
 
 ```bash
-idf.py set-target esp32s3
-idf.py menuconfig           # select board under "PrintSpy Cam Configuration"
-idf.py build
-idf.py -p PORT flash monitor
+make build BOARD=nulllab_esp32s3_cam   # or freenove_s3
+make flash BOARD=nulllab_esp32s3_cam
+make monitor
 ```
 
-Or via the Makefile shortcuts: `make build`, `make flash`, `make monitor`, `make menuconfig`.
+Switching `BOARD` on an already-configured build directory needs `make clean` first.
 
 ## HTTP endpoints
 
@@ -38,8 +37,10 @@ Or via the Makefile shortcuts: `make build`, `make flash`, `make monitor`, `make
 | GET | `/snapshot` | Single JPEG frame |
 | GET | `/stream` | MJPEG stream |
 | GET | `/` | Web admin UI |
-| GET | `/api/status` | Firmware version, WiFi info, camera settings, uptime |
+| GET | `/api/status` | Firmware version, WiFi info, chip temp, uptime |
+| GET | `/api/settings` | Current camera settings |
 | POST | `/api/settings` | Update camera settings |
+| GET | `/api/logs` | Recent log lines |
 | POST | `/api/wifi` | Update WiFi credentials, reboot |
 | POST | `/api/ota` | Firmware update upload, reboot |
 

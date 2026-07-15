@@ -8,10 +8,6 @@ menu "PrintSpy Cam Configuration"
             bool "Freenove ESP32-S3 CAM"
             depends on IDF_TARGET_ESP32S3
 
-        config BOARD_XIAO_S3_SENSE
-            bool "Seeed XIAO ESP32-S3 Sense"
-            depends on IDF_TARGET_ESP32S3
-
         config BOARD_ESP32_S3_EYE
             bool "ESP32-S3-EYE (Espressif)"
             depends on IDF_TARGET_ESP32S3

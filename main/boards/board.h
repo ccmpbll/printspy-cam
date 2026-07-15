@@ -6,8 +6,6 @@
 
 #if CONFIG_BOARD_FREENOVE_S3
 #include "freenove_s3.h"
-#elif CONFIG_BOARD_XIAO_S3_SENSE
-#include "xiao_s3_sense.h"
 #elif CONFIG_BOARD_ESP32_S3_EYE
 #include "esp32_s3_eye.h"
 #elif CONFIG_BOARD_NULLLAB_ESP32S3_CAM
