@@ -8,13 +8,11 @@ camera-streamer source, no backend changes needed.
 
 ## Board support
 
-| Board | Status |
-|---|---|
-| Freenove ESP32-S3 CAM | Verified on hardware, built + released in CI |
-| [nulllaborg ESP32-S3-CAM](https://github.com/nulllaborg/esp32s3-cam) | Verified on hardware, built + released in CI |
-| Espressif ESP32-S3-EYE | Pin mapping unverified, no hardware tested — not built in CI |
+- Freenove ESP32-S3 CAM
+- [nulllaborg ESP32-S3-CAM](https://github.com/nulllaborg/esp32s3-cam)
 
-Each supported board has its own config at `board-configs/<board>.sdkconfig`
+Both verified on hardware, built + released in CI. Each has its own config
+at `board-configs/<board>.sdkconfig`
 (pin selection, flash size, any board-specific Kconfig). Adding a new board
 needs a pin header in `main/boards/` plus a matching `board-configs/*.sdkconfig`.
 

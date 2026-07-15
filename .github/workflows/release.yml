@@ -17,8 +17,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Only boards we actually have hardware to test against - see
-          # build.yml for why the other two aren't here.
+          # Boards we have hardware to test against - see board-configs/
+          # for the full set and main/boards/ to add a new one.
           - board: freenove_s3
             target: esp32s3
           - board: nulllab_esp32s3_cam
