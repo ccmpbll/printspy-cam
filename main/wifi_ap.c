@@ -169,8 +169,8 @@ static esp_err_t get_handler(httpd_req_t *req) {
     return ESP_FAIL;
   }
 
-  // Build <option> list - each entry: template(~27 bytes) + 2x HTML-escaped SSID (max 32 bytes, up to 6x when escaped)
-  size_t opts_size = ap_count * 224 + 64;
+  // Build <option> list - each entry: template(~27 bytes) + 2x HTML-escaped SSID (max 32 bytes, up to 6x when escaped) -> ~411 worst case
+  size_t opts_size = ap_count * 432 + 64;
   char *opts = (char *)malloc(opts_size);
   if (!opts) {
     free(ap_records);
