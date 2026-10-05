@@ -192,6 +192,15 @@ static esp_err_t logs_async_handler(httpd_req_t *req) {
         *nl = '\0';
         char frame[192];
         int flen = snprintf(frame, sizeof(frame), "data: %s\n\n", line);
+        if (flen < 0) {
+          flen = 0;
+        } else if (flen > (int)sizeof(frame) - 1) {
+          // Truncated - keep the SSE event terminator so the next frame
+          // doesn't merge into this one.
+          flen = (int)sizeof(frame) - 1;
+          frame[flen - 2] = '\n';
+          frame[flen - 1] = '\n';
+        }
         res = httpd_resp_send_chunk(req, frame, flen);
         if (res != ESP_OK) {
           return res;
@@ -223,7 +232,9 @@ static esp_err_t status_handler(httpd_req_t *req) {
 
   wifi_config_t wifi_cfg = {0};
   if (esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg) == ESP_OK) {
-    cJSON_AddStringToObject(root, "wifi_ssid", (const char *)wifi_cfg.sta.ssid);
+    char ssid[sizeof(wifi_cfg.sta.ssid) + 1] = {0};
+    memcpy(ssid, wifi_cfg.sta.ssid, sizeof(wifi_cfg.sta.ssid));
+    cJSON_AddStringToObject(root, "wifi_ssid", ssid);
   }
 
   sensor_t *sensor = esp_camera_sensor_get();
@@ -233,6 +244,11 @@ static esp_err_t status_handler(httpd_req_t *req) {
   }
 
   char *json = cJSON_PrintUnformatted(root);
+  if (!json) {
+    cJSON_Delete(root);
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
   httpd_resp_set_type(req, "application/json");
   esp_err_t res = httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
   free(json);
@@ -331,6 +347,11 @@ static esp_err_t settings_get_handler(httpd_req_t *req) {
   }
 
   char *json = cJSON_PrintUnformatted(root);
+  if (!json) {
+    cJSON_Delete(root);
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
   httpd_resp_set_type(req, "application/json");
   esp_err_t res = httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
   free(json);

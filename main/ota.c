@@ -32,6 +32,7 @@ esp_err_t printspy_ota_write_chunk(const uint8_t *data, size_t len) {
 
 esp_err_t printspy_ota_finish(void) {
   esp_err_t err = esp_ota_end(ota_handle);
+  ota_handle = 0;
   if (err != ESP_OK) {
     // Most commonly: uploaded image failed validation (wrong chip target,
     // corrupted download, not actually a printspy-cam image).
