@@ -192,6 +192,15 @@ static esp_err_t logs_async_handler(httpd_req_t *req) {
         *nl = '\0';
         char frame[192];
         int flen = snprintf(frame, sizeof(frame), "data: %s\n\n", line);
+        if (flen < 0) {
+          flen = 0;
+        } else if (flen > (int)sizeof(frame) - 1) {
+          // Truncated - keep the SSE event terminator so the next frame
+          // doesn't merge into this one.
+          flen = (int)sizeof(frame) - 1;
+          frame[flen - 2] = '\n';
+          frame[flen - 1] = '\n';
+        }
         res = httpd_resp_send_chunk(req, frame, flen);
         if (res != ESP_OK) {
           return res;
@@ -223,7 +232,9 @@ static esp_err_t status_handler(httpd_req_t *req) {
 
   wifi_config_t wifi_cfg = {0};
   if (esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg) == ESP_OK) {
-    cJSON_AddStringToObject(root, "wifi_ssid", (const char *)wifi_cfg.sta.ssid);
+    char ssid[sizeof(wifi_cfg.sta.ssid) + 1] = {0};
+    memcpy(ssid, wifi_cfg.sta.ssid, sizeof(wifi_cfg.sta.ssid));
+    cJSON_AddStringToObject(root, "wifi_ssid", ssid);
   }
 
   sensor_t *sensor = esp_camera_sensor_get();
@@ -233,6 +244,11 @@ static esp_err_t status_handler(httpd_req_t *req) {
   }
 
   char *json = cJSON_PrintUnformatted(root);
+  if (!json) {
+    cJSON_Delete(root);
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
   httpd_resp_set_type(req, "application/json");
   esp_err_t res = httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
   free(json);
@@ -243,6 +259,34 @@ static esp_err_t status_handler(httpd_req_t *req) {
 // Reads the full request body into a heap buffer. Caller must free().
 // Only used for small JSON bodies (WiFi creds, settings) - not suitable
 // for the multi-hundred-KB OTA upload, which streams instead.
+// cJSON's default nesting limit (1000) needs far more stack than an httpd
+// task has, so a small deeply-nested body would crash the device. Our JSON
+// is flat; anything nested past this is not ours.
+#define JSON_MAX_DEPTH 8
+
+static bool json_depth_ok(const char *s) {
+  int depth = 0;
+  bool in_str = false;
+  for (; *s; s++) {
+    if (in_str) {
+      if (*s == '\\' && s[1]) {
+        s++;
+      } else if (*s == '"') {
+        in_str = false;
+      }
+    } else if (*s == '"') {
+      in_str = true;
+    } else if (*s == '[' || *s == '{') {
+      if (++depth > JSON_MAX_DEPTH) {
+        return false;
+      }
+    } else if (*s == ']' || *s == '}') {
+      depth--;
+    }
+  }
+  return true;
+}
+
 static esp_err_t read_body(httpd_req_t *req, char **out) {
   if (req->content_len == 0 || req->content_len > 4096) {
     return ESP_ERR_INVALID_SIZE;
@@ -261,6 +305,10 @@ static esp_err_t read_body(httpd_req_t *req, char **out) {
     received += r;
   }
   buf[received] = '\0';
+  if (!json_depth_ok(buf)) {
+    free(buf);
+    return ESP_ERR_INVALID_ARG;
+  }
   *out = buf;
   return ESP_OK;
 }
@@ -331,6 +379,11 @@ static esp_err_t settings_get_handler(httpd_req_t *req) {
   }
 
   char *json = cJSON_PrintUnformatted(root);
+  if (!json) {
+    cJSON_Delete(root);
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
   httpd_resp_set_type(req, "application/json");
   esp_err_t res = httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
   free(json);
@@ -370,21 +423,21 @@ static esp_err_t settings_post_handler(httpd_req_t *req) {
   }
 
   item = cJSON_GetObjectItem(json, "brightness");
-  if (cJSON_IsNumber(item)) {
+  if (cJSON_IsNumber(item) && item->valueint >= -2 && item->valueint <= 2) {
     int8_t val = (int8_t)item->valueint;
     printspy_nvs_set_cam_brightness(val);
     if (sensor) sensor->set_brightness(sensor, val);
   }
 
   item = cJSON_GetObjectItem(json, "contrast");
-  if (cJSON_IsNumber(item)) {
+  if (cJSON_IsNumber(item) && item->valueint >= -2 && item->valueint <= 2) {
     int8_t val = (int8_t)item->valueint;
     printspy_nvs_set_cam_contrast(val);
     if (sensor) sensor->set_contrast(sensor, val);
   }
 
   item = cJSON_GetObjectItem(json, "saturation");
-  if (cJSON_IsNumber(item)) {
+  if (cJSON_IsNumber(item) && item->valueint >= -2 && item->valueint <= 2) {
     int8_t val = (int8_t)item->valueint;
     printspy_nvs_set_cam_saturation(val);
     if (sensor) sensor->set_saturation(sensor, val);
@@ -519,15 +572,23 @@ esp_err_t printspy_http_server_start(void) {
   httpd_uri_t ota_uri = {
       .uri = "/api/ota", .method = HTTP_POST, .handler = ota_post_handler};
 
-  httpd_register_uri_handler(server, &root_uri);
-  httpd_register_uri_handler(server, &snapshot_uri);
-  httpd_register_uri_handler(server, &stream_uri);
-  httpd_register_uri_handler(server, &status_uri);
-  httpd_register_uri_handler(server, &logs_uri);
-  httpd_register_uri_handler(server, &wifi_uri);
-  httpd_register_uri_handler(server, &settings_get_uri);
-  httpd_register_uri_handler(server, &settings_post_uri);
-  httpd_register_uri_handler(server, &ota_uri);
+  httpd_uri_t *routes[] = {&root_uri,         &snapshot_uri,
+                           &stream_uri,       &status_uri,
+                           &logs_uri,         &wifi_uri,
+                           &settings_get_uri, &settings_post_uri,
+                           &ota_uri};
+  esp_err_t reg_err = ESP_OK;
+  for (size_t i = 0; i < sizeof(routes) / sizeof(routes[0]); i++) {
+    esp_err_t e = httpd_register_uri_handler(server, routes[i]);
+    if (e != ESP_OK) {
+      ESP_LOGE(TAG, "register %s failed: %s", routes[i]->uri,
+               esp_err_to_name(e));
+      reg_err = e;
+    }
+  }
+  if (reg_err != ESP_OK) {
+    return reg_err;
+  }
 
   ESP_LOGI(TAG, "HTTP server started");
   return ESP_OK;

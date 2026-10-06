@@ -23,6 +23,7 @@ static int8_t cam_saturation_val = 0;
   do {                                                                       \
     err = nvs_get_fn(handle, key, &(dest));                                \
     if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {                    \
+      nvs_close(handle);                                                    \
       return err;                                                           \
     }                                                                        \
   } while (0)

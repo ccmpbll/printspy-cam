@@ -19,17 +19,25 @@ static uint64_t g_next_seq = 1;
 static portMUX_TYPE g_lock = portMUX_INITIALIZER_UNLOCKED;
 static vprintf_like_t g_orig_vprintf = NULL;
 
-// Strips the trailing CR/LF esp_log always appends. Not stripping ANSI
-// color codes here too: CONFIG_LOG_COLORS defaults to off in ESP-IDF
-// (colors are added by `idf.py monitor` client-side, not the firmware),
-// and nothing in this project's sdkconfig turns it on, so the raw
-// vprintf format string never actually contains them.
+// Strips ANSI color escapes (ESC [ ... final-byte) and the trailing CR/LF
+// esp_log always appends. IDF builds the color codes into the vprintf format
+// string when CONFIG_LOG_COLORS=y (the IDF default), so strip them here
+// regardless of config rather than relying on it being off.
 static void clean_line(char *dst, size_t dst_size, const char *src) {
-  size_t len = strlen(src);
-  if (len >= dst_size) {
-    len = dst_size - 1;
+  size_t len = 0;
+  for (size_t i = 0; src[i] && len < dst_size - 1; i++) {
+    if (src[i] == '\033' && src[i + 1] == '[') {
+      i += 2;
+      while (src[i] && !(src[i] >= '@' && src[i] <= '~')) {
+        i++;
+      }
+      if (!src[i]) {
+        break;
+      }
+      continue;
+    }
+    dst[len++] = src[i];
   }
-  memcpy(dst, src, len);
   dst[len] = '\0';
   while (len > 0 && (dst[len - 1] == '\r' || dst[len - 1] == '\n')) {
     dst[--len] = '\0';

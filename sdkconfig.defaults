@@ -18,3 +18,7 @@ CONFIG_ESP_WIFI_SOFTAP_SUPPORT=y
 # Browsers open several parallel connections to the setup/admin page and to
 # the MJPEG stream; default (10) can starve requests under real use.
 CONFIG_LWIP_MAX_SOCKETS=16
+
+# Log lines are mirrored to the admin page; ANSI color codes would show up as
+# literal escape text there (log.c strips them too, in case this flips).
+CONFIG_LOG_COLORS=n

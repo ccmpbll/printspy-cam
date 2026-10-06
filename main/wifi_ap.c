@@ -34,6 +34,32 @@ static void uri_decode(char *dst, const char *src, size_t dst_len) {
   dst[di] = '\0';
 }
 
+static void html_escape(char *dst, size_t dst_size, const char *src) {
+  size_t o = 0;
+  for (size_t i = 0; src[i] && o + 7 < dst_size; i++) {
+    switch (src[i]) {
+    case '&':
+      if (o + 5 < dst_size) o += snprintf(dst + o, dst_size - o, "&amp;");
+      break;
+    case '<':
+      if (o + 4 < dst_size) o += snprintf(dst + o, dst_size - o, "&lt;");
+      break;
+    case '>':
+      if (o + 4 < dst_size) o += snprintf(dst + o, dst_size - o, "&gt;");
+      break;
+    case '\'':
+      if (o + 5 < dst_size) o += snprintf(dst + o, dst_size - o, "&#39;");
+      break;
+    case '"':
+      if (o + 6 < dst_size) o += snprintf(dst + o, dst_size - o, "&quot;");
+      break;
+    default:
+      dst[o++] = src[i];
+    }
+  }
+  dst[o] = '\0';
+}
+
 static const char *SETUP_PAGE_TEMPLATE =
     "<!DOCTYPE html>"
     "<html lang='en'>"
@@ -123,7 +149,10 @@ static esp_err_t get_handler(httpd_req_t *req) {
   esp_wifi_scan_start(&scan_cfg, true); // blocking scan
 
   uint16_t ap_count = 0;
-  esp_wifi_scan_get_ap_num(&ap_count);
+  if (esp_wifi_scan_get_ap_num(&ap_count) != ESP_OK) {
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
   if (ap_count > 20) {
     ap_count = 20;
   }
@@ -134,10 +163,14 @@ static esp_err_t get_handler(httpd_req_t *req) {
     httpd_resp_send_500(req);
     return ESP_FAIL;
   }
-  esp_wifi_scan_get_ap_records(&ap_count, ap_records);
+  if (esp_wifi_scan_get_ap_records(&ap_count, ap_records) != ESP_OK) {
+    free(ap_records);
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
 
-  // Build <option> list - each entry: template(~27 bytes) + 2x SSID (max 32 bytes each)
-  size_t opts_size = ap_count * 96 + 64;
+  // Build <option> list - each entry: template(~27 bytes) + 2x HTML-escaped SSID (max 32 bytes, up to 6x when escaped) -> ~411 worst case
+  size_t opts_size = ap_count * 432 + 64;
   char *opts = (char *)malloc(opts_size);
   if (!opts) {
     free(ap_records);
@@ -147,9 +180,10 @@ static esp_err_t get_handler(httpd_req_t *req) {
   opts[0] = '\0';
   strlcat(opts, "<option value=''>Select a network...</option>", opts_size);
   for (uint16_t i = 0; i < ap_count; i++) {
-    char opt[96];
-    snprintf(opt, sizeof(opt), "<option value='%s'>%s</option>",
-             (char *)ap_records[i].ssid, (char *)ap_records[i].ssid);
+    char ssid_esc[200];
+    char opt[432];
+    html_escape(ssid_esc, sizeof(ssid_esc), (const char *)ap_records[i].ssid);
+    snprintf(opt, sizeof(opt), "<option value='%s'>%s</option>", ssid_esc, ssid_esc);
     strlcat(opts, opt, opts_size);
   }
   free(ap_records);
